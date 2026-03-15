@@ -261,3 +261,44 @@ frontend/
 - JSON serialization working correctly with manual mapping
 - spawn_blocking pattern prevents runtime nesting issues
 - cargo check passes with 0 errors (2 unused struct warnings only)
+
+## Task 9: Frontend API Client + TanStack Query Hooks (2026-03-15)
+
+### API Layer Implementation
+- Created complete data access layer with 3 files:
+  - `types.ts`: TypeScript interfaces matching server DTOs (TaskInfo, TaskUpdateParams, etc.)
+  - `client.ts`: Thin fetch wrapper with 14 API functions covering all server endpoints
+  - `hooks.ts`: TanStack Query hooks (4 queries + 10 mutations) for React integration
+
+### TypeScript Configuration
+- Vite/TypeScript uses `erasableSyntaxOnly` mode which rejects parameter properties in class constructors
+- Solution: Declare properties separately, then assign in constructor body
+- Pattern: `public readonly error: string;` then `this.error = error;` in constructor
+
+### TanStack Query v5 Patterns
+- Query keys: `['tasks', filter]` for list (enables cache sharing), `['task', uuid]` for individual
+- All task mutations invalidate `['tasks']` queryKey to refetch after changes
+- `useClearData()` invalidates ALL queries via `invalidateQueries()` with no args
+- `useVersion()` has `staleTime: Infinity` since version doesn't change at runtime
+- `useSyncConfig()` and `useSync()` don't need queryClient if they don't invalidate
+
+### API Client Design
+- `apiFetch<T>()` helper abstracts fetch boilerplate: JSON parsing, error handling, 204 No Content
+- Custom `ApiError` class extends Error, exposes `error: string` field from server JSON
+- Query params built with `URLSearchParams` for clean, type-safe parameter encoding
+- 204 No Content responses return `undefined` (cast as `T`) for void Promise types
+
+### Server Endpoint Coverage (14 functions)
+All endpoints from Task 4-7 covered:
+- Task CRUD: create, get, list, update, delete (5)
+- Task status: complete, uncomplete, start, stop (4)
+- Sync: configureSyncServer, syncNow (2)
+- Utility: clearData, getVersion, getWorkingSet (3)
+
+### Evidence Captured
+- `task-9-types-compile.txt`: pnpm build output showing clean TypeScript compilation
+- `task-9-api-surface.txt`: All 14 client functions and 14 hooks verified exported
+
+### Build Success
+TypeScript compiles cleanly with exit code 0. All types resolve correctly.
+

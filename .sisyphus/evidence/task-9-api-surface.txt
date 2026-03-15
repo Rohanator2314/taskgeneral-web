@@ -1,0 +1,45 @@
+=== API Client Functions (client.ts) ===
+  async function createTask(description: string): Promise<TaskInfo> {
+  async function getTask(uuid: string): Promise<TaskInfo> {
+  async function listTasks(filter?: TaskFilterParams): Promise<TaskInfo[]> {
+  async function updateTask(
+  async function deleteTask(uuid: string): Promise<void> {
+  async function completeTask(uuid: string): Promise<TaskInfo> {
+  async function uncompleteTask(uuid: string): Promise<TaskInfo> {
+  async function startTask(uuid: string): Promise<TaskInfo> {
+  async function stopTask(uuid: string): Promise<void> {
+  async function configureSyncServer(config: SyncConfig): Promise<void> {
+  async function syncNow(): Promise<SyncResult> {
+  async function clearData(): Promise<void> {
+  async function getVersion(): Promise<string> {
+  async function getWorkingSet(): Promise<WorkingSetItem[]> {
+
+=== API Hooks (hooks.ts) ===
+  function useTaskList(filter?: TaskFilterParams) {
+  function useTask(uuid: string) {
+  function useWorkingSet() {
+  function useVersion() {
+  function useCreateTask() {
+  function useUpdateTask() {
+  function useDeleteTask() {
+  function useCompleteTask() {
+  function useUncompleteTask() {
+  function useStartTask() {
+  function useStopTask() {
+  function useSyncConfig() {
+  function useSync() {
+  function useClearData() {
+
+=== TypeScript Types (types.ts) ===
+  interface TaskInfo {
+  interface TaskUpdateParams {
+  interface TaskFilterParams {
+  interface SyncConfig {
+  interface SyncResult {
+  interface WorkingSetItem {
+  interface ApiError {
+
+=== Complete API Surface Count ===
+  Client functions: 14
+  Hooks: 14
+  Types: 7
