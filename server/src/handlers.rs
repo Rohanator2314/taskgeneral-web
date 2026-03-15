@@ -38,6 +38,10 @@ pub async fn get_task(
     .unwrap()?;
     
     match result {
+        Some(task) if task.status == "deleted" => Err(AppError::Core(TaskError::TaskNotFound(format!(
+            "Task with UUID {} not found",
+            uuid
+        )))),
         Some(task) => Ok(Json(task)),
         None => Err(AppError::Core(TaskError::TaskNotFound(format!(
             "Task with UUID {} not found",
@@ -80,23 +84,19 @@ pub async fn list_tasks(
 ) -> Result<impl IntoResponse, AppError> {
     let manager = state.manager.clone();
     
-    let has_sort = filter_query.sort_by.is_some();
-    let has_filter = filter_query.status.is_some() 
-        || filter_query.project.is_some() 
+    let has_any_param = filter_query.sort_by.is_some()
+        || filter_query.status.is_some()
+        || filter_query.project.is_some()
         || filter_query.tag.is_some();
     
-    let result = if has_sort {
-        let sort_field = parse_sort_field(filter_query.sort_by.as_ref().unwrap())?;
+    let result = if has_any_param {
+        let sort_field = match filter_query.sort_by.as_deref() {
+            Some(s) => parse_sort_field(s)?,
+            None => taskgeneral_core::models::SortField::Urgency,
+        };
         let filter = filter_query.into();
         tokio::task::spawn_blocking(move || {
             manager.list_tasks_sorted(filter, sort_field)
-        })
-        .await
-        .unwrap()?
-    } else if has_filter {
-        let filter = filter_query.into();
-        tokio::task::spawn_blocking(move || {
-            manager.list_tasks_filtered(filter)
         })
         .await
         .unwrap()?
