@@ -1,20 +1,29 @@
-use axum::{routing::{get, post}, Router};
+use axum::{
+    routing::{get, post},
+    Router,
+};
 use taskgeneral_core::version;
 
-pub mod types;
 pub mod error;
-pub mod state;
 pub mod handlers;
+pub mod state;
+pub mod types;
 
+use handlers::{
+    clear_data, complete_task, configure_sync, create_task, delete_task, get_task, get_working_set,
+    list_tasks, start_task, stop_task, sync_now, uncomplete_task, update_task,
+};
 use state::AppState;
-use handlers::{create_task, get_task, list_tasks, update_task, delete_task, complete_task, uncomplete_task, start_task, stop_task, configure_sync, sync_now, clear_data, get_working_set};
 
 pub fn create_app(state: AppState) -> Router {
     Router::new()
         .route("/api/health", get(health_handler))
         .route("/api/version", get(version_handler))
         .route("/api/tasks", get(list_tasks).post(create_task))
-        .route("/api/tasks/:uuid", get(get_task).put(update_task).delete(delete_task))
+        .route(
+            "/api/tasks/:uuid",
+            get(get_task).put(update_task).delete(delete_task),
+        )
         .route("/api/tasks/:uuid/complete", post(complete_task))
         .route("/api/tasks/:uuid/uncomplete", post(uncomplete_task))
         .route("/api/tasks/:uuid/start", post(start_task))

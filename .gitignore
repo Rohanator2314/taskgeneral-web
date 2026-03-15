@@ -3,9 +3,7 @@
 /dist/
 
 # Dependencies
-Cargo.lock
 node_modules/
-pnpm-lock.yaml
 
 # IDE
 .vscode/
