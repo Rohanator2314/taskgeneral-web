@@ -1,0 +1,9 @@
+{
+  "name": "taskgeneral-web",
+  "private": true,
+  "scripts": {
+    "dev:frontend": "pnpm --filter frontend dev",
+    "build": "pnpm --filter frontend build",
+    "test": "pnpm --filter frontend test"
+  }
+}
