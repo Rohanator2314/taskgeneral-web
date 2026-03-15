@@ -1,0 +1,20 @@
+warning: struct `HealthResponse` is never constructed
+  --> server/src/types.rs:47:12
+   |
+47 | pub struct HealthResponse {
+   |            ^^^^^^^^^^^^^^
+
+warning: function `parse_sort_field` is never used
+  --> server/src/types.rs:76:8
+   |
+76 | pub fn parse_sort_field(s: &str) -> Result<SortField, AppError> {
+   |        ^^^^^^^^^^^^^^^^
+
+warning: enum `AppError` is never used
+ --> server/src/error.rs:7:10
+  |
+7 | pub enum AppError {
+  |          ^^^^^^^^
+
+warning: `taskgeneral-server` (bin "taskgeneral-server") generated 7 warnings
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.13s

@@ -1,0 +1,13 @@
+=== INVALID UUID TEST ===
+
+1. GET with invalid UUID format:
+Status: 400
+Response: {"error":"invalid character: expected an optional prefix of `urn:uuid:` followed by [0-9a-fA-F-], found `n` at 1"}
+
+2. PATCH with invalid UUID format:
+Status: 400
+Response: {"error":"invalid length: expected length 32 for simple format, found 5"}
+
+3. DELETE with invalid UUID format:
+Status: 400
+Response: {"error":"invalid character: expected an optional prefix of `urn:uuid:` followed by [0-9a-fA-F-], found `u` at 5"}

@@ -110,3 +110,55 @@ pub async fn list_tasks(
     
     Ok(Json(result))
 }
+
+pub async fn complete_task(
+    State(state): State<AppState>,
+    Path(uuid): Path<String>,
+) -> Result<impl IntoResponse, AppError> {
+    let manager = state.manager.clone();
+    let result = tokio::task::spawn_blocking(move || {
+        manager.complete_task(uuid)
+    })
+    .await
+    .unwrap()?;
+    Ok(Json(result))
+}
+
+pub async fn uncomplete_task(
+    State(state): State<AppState>,
+    Path(uuid): Path<String>,
+) -> Result<impl IntoResponse, AppError> {
+    let manager = state.manager.clone();
+    let result = tokio::task::spawn_blocking(move || {
+        manager.uncomplete_task(uuid)
+    })
+    .await
+    .unwrap()?;
+    Ok(Json(result))
+}
+
+pub async fn start_task(
+    State(state): State<AppState>,
+    Path(uuid): Path<String>,
+) -> Result<impl IntoResponse, AppError> {
+    let manager = state.manager.clone();
+    let result = tokio::task::spawn_blocking(move || {
+        manager.start_task(uuid)
+    })
+    .await
+    .unwrap()?;
+    Ok(Json(result))
+}
+
+pub async fn stop_task(
+    State(state): State<AppState>,
+    Path(uuid): Path<String>,
+) -> Result<impl IntoResponse, AppError> {
+    let manager = state.manager.clone();
+    tokio::task::spawn_blocking(move || {
+        manager.stop_task(uuid)
+    })
+    .await
+    .unwrap()?;
+    Ok(StatusCode::OK)
+}

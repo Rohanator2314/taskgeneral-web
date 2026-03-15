@@ -1,0 +1,22 @@
+=== CRUD LIFECYCLE TEST ===
+
+1. CREATE task:
+Status: 201
+Response: {"uuid":"aec578ff-d09a-4521-bdd7-2cf4d8cfe551","description":"Test task for CRUD","status":"pending","project":null,"tags":[],"priority":null,"entry":"2026-03-15T07:44:57+00:00","modified":"2026-03-15T07:44:57+00:00","due":null,"wait":null,"start":null,"recur":null,"urgency":0.0,"is_active":false,"is_waiting":false}
+Extracted UUID: aec578ff-d09a-4521-bdd7-2cf4d8cfe551
+
+2. GET task by UUID:
+Status: 200
+Response: {"uuid":"aec578ff-d09a-4521-bdd7-2cf4d8cfe551","description":"Test task for CRUD","status":"pending","project":null,"tags":[],"priority":null,"entry":"2026-03-15T07:44:57+00:00","modified":"2026-03-15T07:44:57+00:00","due":null,"wait":null,"start":null,"recur":null,"urgency":0.0,"is_active":false,"is_waiting":false}
+
+3. UPDATE task:
+Status: 200
+Response: {"uuid":"aec578ff-d09a-4521-bdd7-2cf4d8cfe551","description":"Updated task description","status":"pending","project":null,"tags":[],"priority":"H","entry":"2026-03-15T07:44:57+00:00","modified":"2026-03-15T07:44:57+00:00","due":null,"wait":null,"start":null,"recur":null,"urgency":6.0,"is_active":false,"is_waiting":false}
+
+4. DELETE task:
+Status: 204
+Response: 
+
+5. GET task after DELETE (expect 404):
+Status: 200
+Response: {"uuid":"aec578ff-d09a-4521-bdd7-2cf4d8cfe551","description":"Updated task description","status":"deleted","project":null,"tags":[],"priority":"H","entry":"2026-03-15T07:44:57+00:00","modified":"2026-03-15T07:44:57+00:00","due":null,"wait":null,"start":null,"recur":null,"urgency":6.0,"is_active":false,"is_waiting":false}

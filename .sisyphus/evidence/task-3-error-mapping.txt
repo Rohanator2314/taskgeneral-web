@@ -1,0 +1,18 @@
+running 14 tests
+test error::tests::test_bad_request_maps_to_400 ... ok
+test error::tests::test_invalid_date_maps_to_400 ... ok
+test error::tests::test_invalid_description_maps_to_400 ... ok
+test error::tests::test_invalid_priority_maps_to_400 ... ok
+test error::tests::test_invalid_recurrence_maps_to_400 ... ok
+test error::tests::test_invalid_sync_url_maps_to_400 ... ok
+test error::tests::test_invalid_uuid_maps_to_400 ... ok
+test error::tests::test_io_error_maps_to_500 ... ok
+test error::tests::test_storage_error_maps_to_500 ... ok
+test error::tests::test_sync_error_maps_to_500 ... ok
+test error::tests::test_sync_not_configured_maps_to_409 ... ok
+test error::tests::test_invalid_status_maps_to_400 ... ok
+test error::tests::test_task_champion_error_maps_to_500 ... ok
+test error::tests::test_task_not_found_maps_to_404 ... ok
+
+test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
