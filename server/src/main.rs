@@ -1,16 +1,10 @@
-use axum::{routing::{get, post}, Router};
 use std::env;
+use std::path::Path;
 use tokio::net::TcpListener;
-use taskgeneral_core::{create_task_manager, version};
+use taskgeneral_core::create_task_manager;
+use tower_http::services::{ServeDir, ServeFile};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
-
-mod types;
-mod error;
-mod state;
-mod handlers;
-
-use state::AppState;
-use handlers::{create_task, get_task, list_tasks, update_task, delete_task, complete_task, uncomplete_task, start_task, stop_task, configure_sync, sync_now, clear_data, get_working_set};
+use taskgeneral_server::{create_app, state::AppState};
 
 #[tokio::main]
 async fn main() {
@@ -35,20 +29,19 @@ async fn main() {
     .expect("Failed to join task");
     let state = AppState { manager };
 
-    let app = Router::new()
-        .route("/api/health", get(health_handler))
-        .route("/api/version", get(version_handler))
-        .route("/api/tasks", get(list_tasks).post(create_task))
-        .route("/api/tasks/:uuid", get(get_task).patch(update_task).delete(delete_task))
-        .route("/api/tasks/:uuid/complete", post(complete_task))
-        .route("/api/tasks/:uuid/uncomplete", post(uncomplete_task))
-        .route("/api/tasks/:uuid/start", post(start_task))
-        .route("/api/tasks/:uuid/stop", post(stop_task))
-        .route("/api/sync/configure", post(configure_sync))
-        .route("/api/sync", post(sync_now))
-        .route("/api/data/clear", post(clear_data))
-        .route("/api/working-set", get(get_working_set))
-        .with_state(state);
+    let mut app = create_app(state);
+
+    let static_dir = env::var("TASKGENERAL_STATIC_DIR")
+        .unwrap_or_else(|_| "./frontend/dist".to_string());
+
+    if Path::new(&static_dir).is_dir() {
+        tracing::info!("Serving static files from {}", static_dir);
+        let serve_dir = ServeDir::new(&static_dir)
+            .fallback(ServeFile::new(format!("{}/index.html", static_dir)));
+        app = app.fallback_service(serve_dir);
+    } else {
+        tracing::info!("Static dir '{}' not found — API-only mode", static_dir);
+    }
 
     let port = env::var("TASKGENERAL_PORT")
         .unwrap_or_else(|_| "8080".to_string());
@@ -57,12 +50,4 @@ async fn main() {
     tracing::info!("Starting server on {}", addr);
     let listener = TcpListener::bind(&addr).await.expect("Failed to bind to address");
     axum::serve(listener, app).await.expect("Server failed");
-}
-
-async fn health_handler() -> axum::Json<serde_json::Value> {
-    axum::Json(serde_json::json!({"status": "ok"}))
-}
-
-async fn version_handler() -> axum::Json<serde_json::Value> {
-    axum::Json(serde_json::json!({"version": version()}))
 }
