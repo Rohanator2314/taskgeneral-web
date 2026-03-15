@@ -1,0 +1,22 @@
+[][
+  {
+    "id": 1,
+    "task": {
+      "description": "Test task for working set",
+      "due": null,
+      "entry": "2026-03-15T08:04:25+00:00",
+      "is_active": false,
+      "is_waiting": false,
+      "modified": "2026-03-15T08:04:25+00:00",
+      "priority": null,
+      "project": null,
+      "recur": null,
+      "start": null,
+      "status": "pending",
+      "tags": [],
+      "urgency": 3.170979198376459E-7,
+      "uuid": "1cf8e3b5-d0a0-4bca-add9-ecadecebd924",
+      "wait": null
+    }
+  }
+]

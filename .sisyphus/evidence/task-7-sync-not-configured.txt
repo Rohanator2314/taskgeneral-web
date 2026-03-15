@@ -1,0 +1,2 @@
+{"error":"Sync not configured"}
+HTTP Status: 409

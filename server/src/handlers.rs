@@ -162,3 +162,62 @@ pub async fn stop_task(
     .unwrap()?;
     Ok(StatusCode::OK)
 }
+
+pub async fn configure_sync(
+    State(state): State<AppState>,
+    Json(req): Json<crate::types::SyncConfigRequest>,
+) -> Result<impl IntoResponse, AppError> {
+    let manager = state.manager.clone();
+    tokio::task::spawn_blocking(move || {
+        manager.configure_sync(req.server_url, req.encryption_secret, req.client_id)
+    })
+    .await
+    .unwrap()?;
+    Ok(Json(serde_json::json!({"status": "configured"})))
+}
+
+pub async fn sync_now(
+    State(state): State<AppState>,
+) -> Result<impl IntoResponse, AppError> {
+    let manager = state.manager.clone();
+    let result = tokio::task::spawn_blocking(move || {
+        manager.sync()
+    })
+    .await
+    .unwrap()?;
+    Ok(Json(serde_json::json!({
+        "success": result.success,
+        "message": result.message,
+    })))
+}
+
+pub async fn clear_data(
+    State(state): State<AppState>,
+) -> Result<impl IntoResponse, AppError> {
+    let manager = state.manager.clone();
+    tokio::task::spawn_blocking(move || {
+        manager.clear_local_data()
+    })
+    .await
+    .unwrap()?;
+    tracing::warn!("clear_local_data called — destructive operation");
+    Ok(Json(serde_json::json!({"status": "cleared"})))
+}
+
+pub async fn get_working_set(
+    State(state): State<AppState>,
+) -> Result<impl IntoResponse, AppError> {
+    let manager = state.manager.clone();
+    let working_set = tokio::task::spawn_blocking(move || {
+        manager.get_working_set()
+    })
+    .await
+    .unwrap()?;
+    let items: Vec<serde_json::Value> = working_set.into_iter().map(|item| {
+        serde_json::json!({
+            "id": item.id,
+            "task": item.task,
+        })
+    }).collect();
+    Ok(Json(items))
+}

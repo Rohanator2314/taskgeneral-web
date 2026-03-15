@@ -10,7 +10,7 @@ mod state;
 mod handlers;
 
 use state::AppState;
-use handlers::{create_task, get_task, list_tasks, update_task, delete_task, complete_task, uncomplete_task, start_task, stop_task};
+use handlers::{create_task, get_task, list_tasks, update_task, delete_task, complete_task, uncomplete_task, start_task, stop_task, configure_sync, sync_now, clear_data, get_working_set};
 
 #[tokio::main]
 async fn main() {
@@ -44,6 +44,10 @@ async fn main() {
         .route("/api/tasks/:uuid/uncomplete", post(uncomplete_task))
         .route("/api/tasks/:uuid/start", post(start_task))
         .route("/api/tasks/:uuid/stop", post(stop_task))
+        .route("/api/sync/configure", post(configure_sync))
+        .route("/api/sync", post(sync_now))
+        .route("/api/data/clear", post(clear_data))
+        .route("/api/working-set", get(get_working_set))
         .with_state(state);
 
     let port = env::var("TASKGENERAL_PORT")

@@ -200,3 +200,64 @@ frontend/
 - Compilation verified with `cargo check` (warnings only, no errors)
 - All endpoints tested with curl lifecycle sequence
 - 404 error handling verified
+
+## [2026-03-15] Task 7: Sync + Utility Endpoints
+
+### Handler Implementation Pattern
+- **4 new handlers added**: `configure_sync`, `sync_now`, `clear_data`, `get_working_set`
+- All use `tokio::task::spawn_blocking` for blocking core calls
+- All return `Result<impl IntoResponse, AppError>`
+
+### Serde Gaps in Core
+- **SyncResult**: Does NOT implement Serialize. Manual mapping required:
+  ```rust
+  Ok(Json(serde_json::json!({
+      "success": result.success,
+      "message": result.message,
+  })))
+  ```
+- **WorkingSetItem**: Does NOT implement Serialize. Must map to JSON:
+  ```rust
+  let items: Vec<serde_json::Value> = working_set.into_iter().map(|item| {
+      serde_json::json!({
+          "id": item.id,
+          "task": item.task,  // TaskInfo IS Serializable
+      })
+  }).collect();
+  ```
+
+### Endpoint Specifications
+
+**POST /api/sync/configure**
+- Request: SyncConfigRequest { server_url, encryption_secret, client_id }
+- Response: 200 {"status": "configured"}
+- Note: client_id MUST be valid UUID format
+
+**POST /api/sync**
+- No request body
+- Returns SyncResult mapped to { success, message }
+- Returns 409 CONFLICT if sync not configured yet
+
+**POST /api/data/clear**
+- No request body
+- Returns 200 {"status": "cleared"}
+- Logs warning: "clear_local_data called — destructive operation"
+- No auth required (simple endpoint)
+
+**GET /api/working-set**
+- No request body
+- Returns array of working set items with id and task details
+- Each item has structure: { id: u64, task: TaskInfo }
+- Returns 200 with empty array if no active tasks
+
+### Version Endpoint
+- Already existed as inline `version_handler` in main.rs
+- NOT duplicated — left as-is
+- Returns GET /api/version with { version: "0.1.0" }
+
+### Testing Results
+- All 4 new endpoints tested and verified working
+- Error handling correct (409 for sync not configured)
+- JSON serialization working correctly with manual mapping
+- spawn_blocking pattern prevents runtime nesting issues
+- cargo check passes with 0 errors (2 unused struct warnings only)
