@@ -66,14 +66,16 @@ export default function TaskList({ filter }: TaskListProps) {
     const el = container.querySelector<HTMLElement>('[data-selected="true"]');
     if (!el) return;
     const theadHeight = theadRef.current?.offsetHeight ?? 0;
-    const elTop = el.offsetTop;
-    const elBottom = elTop + el.offsetHeight;
-    const viewTop = container.scrollTop + theadHeight;
-    const viewBottom = container.scrollTop + container.clientHeight;
-    if (elTop < viewTop) {
-      container.scrollTop = elTop - theadHeight;
-    } else if (elBottom > viewBottom) {
-      container.scrollTop = elBottom - container.clientHeight;
+    const containerRect = container.getBoundingClientRect();
+    const elRect = el.getBoundingClientRect();
+    const elContentTop = elRect.top - containerRect.top + container.scrollTop;
+    const elContentBottom = elRect.bottom - containerRect.top + container.scrollTop;
+    const visibleTop = container.scrollTop + theadHeight;
+    const visibleBottom = container.scrollTop + container.clientHeight;
+    if (elContentTop < visibleTop) {
+      container.scrollTop = elContentTop - theadHeight;
+    } else if (elContentBottom > visibleBottom) {
+      container.scrollTop = elContentBottom - container.clientHeight;
     }
   }, [selectedRow]);
 
