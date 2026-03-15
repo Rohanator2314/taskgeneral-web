@@ -7,8 +7,9 @@ import {
   useStartTask, 
   useStopTask 
 } from '../api/hooks';
-import type { TaskInfo } from '../api/types';
+import type { TaskInfo, TaskFilterParams } from '../api/types';
 import TaskForm from './TaskForm';
+import { useKeyboardNav } from '../hooks/useKeyboardNav';
 
 const formatDuration = (dateStr?: string): string => {
   if (!dateStr) return '';
@@ -37,8 +38,13 @@ const formatDue = (dateStr?: string): string => {
   return `${Math.floor(diffDays / 30)}mo`;
 };
 
-export default function TaskList() {
-  const { data: tasks, isLoading, isError, refetch } = useTaskList();
+
+interface TaskListProps {
+  filter?: TaskFilterParams;
+}
+
+export default function TaskList({ filter }: TaskListProps) {
+  const { data: tasks, isLoading, isError, refetch } = useTaskList(filter);
   const [selectedRow, setSelectedRow] = useState<number | null>(null);
   const [formMode, setFormMode] = useState<'create' | 'edit' | null>(null);
   const [statusMsg, setStatusMsg] = useState<string | null>(null);
@@ -49,31 +55,28 @@ export default function TaskList() {
   const startTask = useStartTask();
   const stopTask = useStopTask();
 
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement || e.target instanceof HTMLSelectElement) return;
-
-      if (e.key === 'a') {
-        e.preventDefault();
-        setFormMode('create');
-        setSelectedRow(null);
-      }
-      
-      if (e.key === 'Escape') {
-        setFormMode(null);
-        setSelectedRow(null);
-      }
-
-      if (selectedRow !== null && tasks && tasks[selectedRow]) {
-        if (e.key === 'Enter' || e.key === 'e') {
-           e.preventDefault();
-           setFormMode('edit');
-        }
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedRow, tasks, formMode]);
+  useKeyboardNav({
+    tasks,
+    selectedRow,
+    setSelectedRow,
+    formMode,
+    setFormMode,
+    onComplete: (uuid) => completeTask.mutate(uuid, {
+      onSuccess: () => setStatusMsg('Completed')
+    }),
+    onUncomplete: (uuid) => uncompleteTask.mutate(uuid, {
+      onSuccess: () => setStatusMsg('Uncompleted')
+    }),
+    onStart: (uuid) => startTask.mutate(uuid, {
+      onSuccess: () => setStatusMsg('Started')
+    }),
+    onStop: (uuid) => stopTask.mutate(uuid, {
+      onSuccess: () => setStatusMsg('Stopped')
+    }),
+    onDelete: (uuid) => deleteTask.mutate(uuid, {
+      onSuccess: () => setStatusMsg('Deleted')
+    }),
+  });
 
   useEffect(() => {
     if (statusMsg) {
@@ -85,15 +88,6 @@ export default function TaskList() {
   const handleAction = (action: () => void, msg: string) => {
     action();
     setStatusMsg(msg);
-  };
-
-  const handleDelete = (uuid: string) => {
-    if (window.confirm("Delete task?")) {
-      deleteTask.mutate(uuid, {
-        onSuccess: () => setStatusMsg('Deleted')
-      });
-      setSelectedRow(null);
-    }
   };
 
   if (isLoading) {
@@ -230,8 +224,15 @@ export default function TaskList() {
                        </button>
                        <button 
                          className="px-1 text-xs border border-red-500 text-red-500 hover:bg-red-500 hover:text-white"
-                         onClick={() => handleDelete(task.uuid)}
-                         title="Delete"
+                         onClick={() => {
+                           if (window.confirm("Delete task?")) {
+                             deleteTask.mutate(task.uuid, {
+                               onSuccess: () => setStatusMsg('Deleted')
+                             });
+                             setSelectedRow(null);
+                           }
+                         }}
+                         title="Delete (d)"
                        >
                          Del
                        </button>
@@ -252,6 +253,11 @@ export default function TaskList() {
           })}
         </tbody>
       </table>
+      <div className="sticky bottom-0 bg-bg-primary border-t border-border px-2 py-1">
+        <div className="font-mono text-xs opacity-50 text-text-primary">
+          j/k↑↓:nav | a:add | e:edit | c:comp | u:uncomp | s:start/stop | d:del | esc:cancel
+        </div>
+      </div>
     </div>
   );
 }

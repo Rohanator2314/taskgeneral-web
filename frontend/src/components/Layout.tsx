@@ -1,9 +1,37 @@
+import { useState } from 'react'
 import { useTheme } from '../theme/ThemeContext'
 import TaskList from './TaskList'
+import SyncModal from './SyncModal'
+import FilterBar from './FilterBar'
+import type { TaskFilterParams } from '../api/types'
 
 export default function Layout() {
   const { theme, toggleTheme } = useTheme()
   const isDark = theme === 'dark'
+  const [showSyncModal, setShowSyncModal] = useState(false)
+
+  const [filter, setFilter] = useState<TaskFilterParams>(() => {
+    const params = new URLSearchParams(window.location.search);
+    const f: TaskFilterParams = {};
+    if (params.get('status')) f.status = params.get('status')!;
+    if (params.get('project')) f.project = params.get('project')!;
+    if (params.get('tag')) f.tag = params.get('tag')!;
+    if (params.get('sort_by')) f.sort_by = params.get('sort_by')!;
+    return f;
+  });
+
+  const handleFilterChange = (newFilter: TaskFilterParams) => {
+    const params = new URLSearchParams();
+    if (newFilter.status) params.set('status', newFilter.status);
+    if (newFilter.project) params.set('project', newFilter.project);
+    if (newFilter.tag) params.set('tag', newFilter.tag);
+    if (newFilter.sort_by) params.set('sort_by', newFilter.sort_by);
+    
+    const search = params.toString();
+    const newUrl = search ? `?${search}` : window.location.pathname;
+    window.history.pushState({}, '', newUrl);
+    setFilter(newFilter);
+  };
 
   return (
     <div className="min-h-screen bg-bg-primary text-text-primary font-mono p-4 flex flex-col items-center justify-center">
@@ -28,14 +56,21 @@ export default function Layout() {
               [{isDark ? '☀' : '🌙'}]
             </button>
             <div className="flex items-center gap-1 text-sm">
-              <span>[Sync]</span>
+              <button 
+              onClick={() => setShowSyncModal(true)}
+              className="hover:text-accent transition-colors cursor-pointer"
+              title="Open Sync Settings"
+            >
+              [Sync]
+            </button>
               <span className="text-accent font-bold">─┐</span>
             </div>
           </div>
         </header>
 
         <main className="flex-1 relative overflow-hidden flex flex-col">
-           <TaskList />
+           <FilterBar filter={filter} onFilterChange={handleFilterChange} />
+           <TaskList filter={filter} />
         </main>
 
         <footer className="border-t border-border p-2 text-sm flex items-center gap-2 bg-bg-primary select-none">
@@ -50,6 +85,7 @@ export default function Layout() {
           <span className="text-accent font-bold">┘</span>
         </footer>
       </div>
+      {showSyncModal && <SyncModal onClose={() => setShowSyncModal(false)} />}
     </div>
   )
 }

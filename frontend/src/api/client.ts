@@ -61,7 +61,7 @@ export async function updateTask(
   updates: TaskUpdateParams
 ): Promise<TaskInfo> {
   return apiFetch<TaskInfo>(`/tasks/${uuid}`, {
-    method: 'PATCH',
+    method: 'PUT',
     body: JSON.stringify(updates),
   });
 }
@@ -110,8 +110,8 @@ export async function syncNow(): Promise<SyncResult> {
 }
 
 export async function clearData(): Promise<void> {
-  await apiFetch<{ status: string }>('/data/clear', {
-    method: 'POST',
+  await apiFetch<{ status: string }>('/data', {
+    method: 'DELETE',
   });
 }
 
@@ -121,5 +121,5 @@ export async function getVersion(): Promise<string> {
 }
 
 export async function getWorkingSet(): Promise<WorkingSetItem[]> {
-  return apiFetch<WorkingSetItem[]>('/working-set');
+  return apiFetch<WorkingSetItem[]>('/tasks/working-set');
 }

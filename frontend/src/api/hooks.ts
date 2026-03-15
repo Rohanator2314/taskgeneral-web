@@ -109,8 +109,12 @@ export function useSyncConfig() {
 }
 
 export function useSync() {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: () => client.syncNow(),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+    },
   });
 }
 
