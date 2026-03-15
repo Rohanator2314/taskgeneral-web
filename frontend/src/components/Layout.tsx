@@ -1,11 +1,7 @@
-import { type ReactNode } from 'react'
 import { useTheme } from '../theme/ThemeContext'
+import TaskList from './TaskList'
 
-interface LayoutProps {
-  children: ReactNode
-}
-
-export default function Layout({ children }: LayoutProps) {
+export default function Layout() {
   const { theme, toggleTheme } = useTheme()
   const isDark = theme === 'dark'
 
@@ -38,8 +34,8 @@ export default function Layout({ children }: LayoutProps) {
           </div>
         </header>
 
-        <main className="flex-1 p-6 relative overflow-y-auto">
-           {children}
+        <main className="flex-1 relative overflow-hidden flex flex-col">
+           <TaskList />
         </main>
 
         <footer className="border-t border-border p-2 text-sm flex items-center gap-2 bg-bg-primary select-none">
