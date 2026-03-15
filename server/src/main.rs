@@ -1,4 +1,4 @@
-use axum::{routing::get, Router};
+use axum::{routing::{get, post}, Router};
 use std::env;
 use tokio::net::TcpListener;
 use taskgeneral_core::{create_task_manager, version};
@@ -7,8 +7,10 @@ use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 mod types;
 mod error;
 mod state;
+mod handlers;
 
 use state::AppState;
+use handlers::{create_task, get_task, update_task, delete_task};
 
 #[tokio::main]
 async fn main() {
@@ -36,6 +38,8 @@ async fn main() {
     let app = Router::new()
         .route("/api/health", get(health_handler))
         .route("/api/version", get(version_handler))
+        .route("/api/tasks", post(create_task))
+        .route("/api/tasks/:uuid", get(get_task).patch(update_task).delete(delete_task))
         .with_state(state);
 
     let port = env::var("TASKGENERAL_PORT")
