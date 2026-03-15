@@ -160,7 +160,7 @@ pub async fn stop_task(
     })
     .await
     .unwrap()?;
-    Ok(StatusCode::OK)
+    Ok(StatusCode::NO_CONTENT)
 }
 
 pub async fn configure_sync(

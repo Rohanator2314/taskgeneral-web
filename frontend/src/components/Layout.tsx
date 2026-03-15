@@ -34,8 +34,8 @@ export default function Layout() {
   };
 
   return (
-    <div className="min-h-screen bg-bg-primary text-text-primary font-mono p-4 flex flex-col items-center justify-center">
-      <div className="w-full max-w-4xl border border-border rounded-lg shadow-lg overflow-hidden flex flex-col min-h-[600px]">
+    <div className="h-screen bg-bg-primary text-text-primary font-mono p-4 flex flex-col items-center justify-center overflow-hidden">
+      <div className="w-full max-w-4xl border border-border rounded-lg shadow-lg flex flex-col h-full">
         <header 
           data-testid="layout-header" 
           className="border-b border-border p-3 flex justify-between items-center bg-bg-primary select-none"

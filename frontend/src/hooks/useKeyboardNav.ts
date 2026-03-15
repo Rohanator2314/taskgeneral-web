@@ -7,6 +7,8 @@ interface UseKeyboardNavOptions {
   setSelectedRow: (i: number | null) => void;
   formMode: 'create' | 'edit' | null;
   setFormMode: (m: 'create' | 'edit' | null) => void;
+  pendingDelete: string | null;
+  setPendingDelete: (uuid: string | null) => void;
   onComplete: (uuid: string) => void;
   onUncomplete: (uuid: string) => void;
   onStart: (uuid: string) => void;
@@ -16,7 +18,7 @@ interface UseKeyboardNavOptions {
 
 /**
  * Custom hook for keyboard navigation in the task list.
- * 
+ *
  * Keyboard shortcuts:
  * - j/↓: Move to next task
  * - k/↑: Move to previous task
@@ -27,9 +29,9 @@ interface UseKeyboardNavOptions {
  * - c: Complete selected task
  * - u: Uncomplete selected task
  * - s: Start/stop selected task (toggle)
- * - d: Delete selected task (with confirmation)
+ * - d: First press stages delete (shows confirmation); second press confirms
  * - Escape: Clear selection/cancel mode
- * 
+ *
  * Guards:
  * - Keys disabled when input/select/textarea is focused
  * - Keys disabled when Ctrl/Meta modifier is held (preserves browser shortcuts)
@@ -41,6 +43,8 @@ export function useKeyboardNav(options: UseKeyboardNavOptions): void {
     setSelectedRow,
     formMode,
     setFormMode,
+    pendingDelete,
+    setPendingDelete,
     onComplete,
     onUncomplete,
     onStart,
@@ -68,9 +72,10 @@ export function useKeyboardNav(options: UseKeyboardNavOptions): void {
 
     const now = Date.now();
     const timeSinceLastKey = now - lastKeyTimeRef.current;
-    
+
     if (e.key === 'j' || e.key === 'ArrowDown') {
       e.preventDefault();
+      setPendingDelete(null);
       if (!tasks || tasks.length === 0) return;
       if (selectedRow === null) {
         setSelectedRow(0);
@@ -84,6 +89,7 @@ export function useKeyboardNav(options: UseKeyboardNavOptions): void {
 
     if (e.key === 'k' || e.key === 'ArrowUp') {
       e.preventDefault();
+      setPendingDelete(null);
       if (!tasks || tasks.length === 0) return;
       if (selectedRow === null) {
         setSelectedRow(tasks.length - 1);
@@ -99,6 +105,7 @@ export function useKeyboardNav(options: UseKeyboardNavOptions): void {
     if (e.key === 'g') {
       if (lastKeyRef.current === 'g' && timeSinceLastKey < 500) {
         e.preventDefault();
+        setPendingDelete(null);
         if (tasks && tasks.length > 0) {
           setSelectedRow(0);
         }
@@ -113,6 +120,7 @@ export function useKeyboardNav(options: UseKeyboardNavOptions): void {
 
     if (e.key === 'G') {
       e.preventDefault();
+      setPendingDelete(null);
       if (tasks && tasks.length > 0) {
         setSelectedRow(tasks.length - 1);
       }
@@ -123,6 +131,7 @@ export function useKeyboardNav(options: UseKeyboardNavOptions): void {
 
     if (e.key === 'a') {
       e.preventDefault();
+      setPendingDelete(null);
       setFormMode('create');
       setSelectedRow(null);
       lastKeyRef.current = e.key;
@@ -140,6 +149,7 @@ export function useKeyboardNav(options: UseKeyboardNavOptions): void {
     }
 
     if (e.key === 'Escape') {
+      setPendingDelete(null);
       setFormMode(null);
       setSelectedRow(null);
       lastKeyRef.current = e.key;
@@ -152,6 +162,7 @@ export function useKeyboardNav(options: UseKeyboardNavOptions): void {
 
       if (e.key === 'Enter' || e.key === 'e') {
         e.preventDefault();
+        setPendingDelete(null);
         setFormMode('edit');
         lastKeyRef.current = e.key;
         lastKeyTimeRef.current = now;
@@ -160,6 +171,7 @@ export function useKeyboardNav(options: UseKeyboardNavOptions): void {
 
       if (e.key === 'c') {
         e.preventDefault();
+        setPendingDelete(null);
         if (task.status !== 'completed') {
           onComplete(task.uuid);
         }
@@ -170,6 +182,7 @@ export function useKeyboardNav(options: UseKeyboardNavOptions): void {
 
       if (e.key === 'u') {
         e.preventDefault();
+        setPendingDelete(null);
         if (task.status === 'completed') {
           onUncomplete(task.uuid);
         }
@@ -180,6 +193,7 @@ export function useKeyboardNav(options: UseKeyboardNavOptions): void {
 
       if (e.key === 's') {
         e.preventDefault();
+        setPendingDelete(null);
         if (task.is_active) {
           onStop(task.uuid);
         } else {
@@ -192,9 +206,9 @@ export function useKeyboardNav(options: UseKeyboardNavOptions): void {
 
       if (e.key === 'd') {
         e.preventDefault();
-        if (window.confirm('Delete task?')) {
+        if (pendingDelete === task.uuid) {
           onDelete(task.uuid);
-          // Post-deletion selection: next task shifts into current position, or move to previous if last, or null if empty
+          setPendingDelete(null);
           if (selectedRow < tasks.length - 1) {
             setSelectedRow(selectedRow);
           } else if (selectedRow > 0) {
@@ -202,6 +216,8 @@ export function useKeyboardNav(options: UseKeyboardNavOptions): void {
           } else {
             setSelectedRow(null);
           }
+        } else {
+          setPendingDelete(task.uuid);
         }
         lastKeyRef.current = e.key;
         lastKeyTimeRef.current = now;
@@ -218,6 +234,8 @@ export function useKeyboardNav(options: UseKeyboardNavOptions): void {
     setSelectedRow,
     formMode,
     setFormMode,
+    pendingDelete,
+    setPendingDelete,
     onComplete,
     onUncomplete,
     onStart,

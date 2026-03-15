@@ -434,7 +434,7 @@ async fn test_start_stop() {
         .unwrap();
     
     let response = app.clone().oneshot(stop_request).await.unwrap();
-    assert_eq!(response.status(), StatusCode::OK);
+    assert_eq!(response.status(), StatusCode::NO_CONTENT);
     
     cleanup_test(app, temp_dir).await;
 }
