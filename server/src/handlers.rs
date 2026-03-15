@@ -1,5 +1,5 @@
 use axum::{
-    extract::{Path, State},
+    extract::{Path, Query, State},
     http::StatusCode,
     response::IntoResponse,
     Json,
@@ -9,7 +9,7 @@ use taskgeneral_core::{error::TaskError, models::TaskUpdate};
 use crate::{
     error::AppError,
     state::AppState,
-    types::{CreateTaskRequest, UpdateTaskRequest},
+    types::{CreateTaskRequest, TaskFilterQuery, UpdateTaskRequest, parse_sort_field},
 };
 
 pub async fn create_task(
@@ -72,4 +72,41 @@ pub async fn delete_task(
     .await
     .unwrap()?;
     Ok(StatusCode::NO_CONTENT)
+}
+
+pub async fn list_tasks(
+    State(state): State<AppState>,
+    Query(filter_query): Query<TaskFilterQuery>,
+) -> Result<impl IntoResponse, AppError> {
+    let manager = state.manager.clone();
+    
+    let has_sort = filter_query.sort_by.is_some();
+    let has_filter = filter_query.status.is_some() 
+        || filter_query.project.is_some() 
+        || filter_query.tag.is_some();
+    
+    let result = if has_sort {
+        let sort_field = parse_sort_field(filter_query.sort_by.as_ref().unwrap())?;
+        let filter = filter_query.into();
+        tokio::task::spawn_blocking(move || {
+            manager.list_tasks_sorted(filter, sort_field)
+        })
+        .await
+        .unwrap()?
+    } else if has_filter {
+        let filter = filter_query.into();
+        tokio::task::spawn_blocking(move || {
+            manager.list_tasks_filtered(filter)
+        })
+        .await
+        .unwrap()?
+    } else {
+        tokio::task::spawn_blocking(move || {
+            manager.list_tasks()
+        })
+        .await
+        .unwrap()?
+    };
+    
+    Ok(Json(result))
 }

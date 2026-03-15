@@ -10,7 +10,7 @@ mod state;
 mod handlers;
 
 use state::AppState;
-use handlers::{create_task, get_task, update_task, delete_task};
+use handlers::{create_task, get_task, list_tasks, update_task, delete_task};
 
 #[tokio::main]
 async fn main() {
@@ -38,7 +38,7 @@ async fn main() {
     let app = Router::new()
         .route("/api/health", get(health_handler))
         .route("/api/version", get(version_handler))
-        .route("/api/tasks", post(create_task))
+        .route("/api/tasks", get(list_tasks).post(create_task))
         .route("/api/tasks/:uuid", get(get_task).patch(update_task).delete(delete_task))
         .with_state(state);
 
