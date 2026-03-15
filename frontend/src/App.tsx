@@ -1,8 +1,10 @@
+import Layout from './components/Layout'
+
 function App() {
   return (
-    <div className="min-h-screen p-4">
-      <h1 className="text-2xl font-bold">TaskGeneral</h1>
-    </div>
+    <Layout>
+      <div>Task list goes here</div>
+    </Layout>
   )
 }
 
