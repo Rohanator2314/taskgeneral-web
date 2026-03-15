@@ -89,7 +89,7 @@ pub async fn list_tasks(
         || filter_query.project.is_some()
         || filter_query.tag.is_some();
     
-    let result = if has_any_param {
+    let mut result = if has_any_param {
         let sort_field = match filter_query.sort_by.as_deref() {
             Some(s) => parse_sort_field(s)?,
             None => taskgeneral_core::models::SortField::Urgency,
@@ -107,7 +107,9 @@ pub async fn list_tasks(
         .await
         .unwrap()?
     };
-    
+
+    result.retain(|t| t.status != "deleted");
+
     Ok(Json(result))
 }
 

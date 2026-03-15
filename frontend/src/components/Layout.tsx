@@ -1,14 +1,16 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useTheme } from '../theme/ThemeContext'
 import TaskList from './TaskList'
-import SyncModal from './SyncModal'
+import SettingsPage from './SettingsPage'
 import FilterBar from './FilterBar'
 import type { TaskFilterParams } from '../api/types'
+
+type View = 'tasks' | 'settings'
 
 export default function Layout() {
   const { theme, toggleTheme } = useTheme()
   const isDark = theme === 'dark'
-  const [showSyncModal, setShowSyncModal] = useState(false)
+  const [view, setView] = useState<View>('tasks')
 
   const [filter, setFilter] = useState<TaskFilterParams>(() => {
     const params = new URLSearchParams(window.location.search);
@@ -19,6 +21,15 @@ export default function Layout() {
     if (params.get('sort_by')) f.sort_by = params.get('sort_by')!;
     return f;
   });
+
+  useEffect(() => {
+    if (view !== 'settings') return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setView('tasks');
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [view]);
 
   const handleFilterChange = (newFilter: TaskFilterParams) => {
     const params = new URLSearchParams();
@@ -56,21 +67,28 @@ export default function Layout() {
               [{isDark ? '☀' : '🌙'}]
             </button>
             <div className="flex items-center gap-1 text-sm">
-              <button 
-              onClick={() => setShowSyncModal(true)}
-              className="hover:text-accent transition-colors cursor-pointer"
-              title="Open Sync Settings"
-            >
-              [Sync]
-            </button>
+              <button
+                onClick={() => setView(v => v === 'settings' ? 'tasks' : 'settings')}
+                data-testid="settings-nav"
+                className={`hover:text-accent transition-colors cursor-pointer ${view === 'settings' ? 'text-accent' : ''}`}
+                title="Settings"
+              >
+                {view === 'settings' ? '[← Tasks]' : '[Settings]'}
+              </button>
               <span className="text-accent font-bold">─┐</span>
             </div>
           </div>
         </header>
 
         <main className="flex-1 relative overflow-hidden flex flex-col">
-           <FilterBar filter={filter} onFilterChange={handleFilterChange} />
-           <TaskList filter={filter} />
+          {view === 'settings' ? (
+            <SettingsPage onBack={() => setView('tasks')} />
+          ) : (
+            <>
+              <FilterBar filter={filter} onFilterChange={handleFilterChange} />
+              <TaskList filter={filter} />
+            </>
+          )}
         </main>
 
         <footer className="border-t border-border p-2 text-sm flex items-center gap-2 bg-bg-primary select-none">
@@ -85,7 +103,6 @@ export default function Layout() {
           <span className="text-accent font-bold">┘</span>
         </footer>
       </div>
-      {showSyncModal && <SyncModal onClose={() => setShowSyncModal(false)} />}
     </div>
   )
 }

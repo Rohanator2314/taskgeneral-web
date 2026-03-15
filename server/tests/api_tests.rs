@@ -233,7 +233,6 @@ async fn test_delete_task() {
     let response = app.clone().oneshot(delete_request).await.unwrap();
     assert_eq!(response.status(), StatusCode::NO_CONTENT);
     
-    // After soft-delete, GET should return 404
     let get_request = Request::builder()
         .uri(format!("/api/tasks/{}", uuid))
         .body(Body::empty())
@@ -241,7 +240,18 @@ async fn test_delete_task() {
     
     let response = app.clone().oneshot(get_request).await.unwrap();
     assert_eq!(response.status(), StatusCode::NOT_FOUND);
-    
+
+    let list_request = Request::builder()
+        .uri("/api/tasks")
+        .body(Body::empty())
+        .unwrap();
+
+    let response = app.clone().oneshot(list_request).await.unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+    let body = parse_json_body(response.into_body()).await;
+    let tasks = body.as_array().unwrap();
+    assert!(tasks.iter().all(|t| t["uuid"] != uuid));
+
     cleanup_test(app, temp_dir).await;
 }
 

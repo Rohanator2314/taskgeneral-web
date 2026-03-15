@@ -15,7 +15,7 @@ export default function FilterBar({ filter, onFilterChange }: FilterBarProps) {
   const hasFilters = Object.keys(filter).length > 0;
 
   return (
-    <div className="w-full border-b border-border p-2 bg-bg-primary flex flex-wrap gap-4 items-center text-sm font-mono select-none">
+    <div className="shrink-0 w-full border-b border-border p-2 bg-bg-primary flex flex-wrap gap-4 items-center text-sm font-mono select-none">
       <div className="flex items-center gap-2">
         <span className="text-accent opacity-70">F:</span>
         

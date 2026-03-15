@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   useTaskList,
   useDeleteTask,
@@ -55,7 +55,27 @@ export default function TaskList({ filter }: TaskListProps) {
   const startTask = useStartTask();
   const stopTask = useStopTask();
 
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const theadRef = useRef<HTMLTableSectionElement>(null);
+
   const flash = (msg: string) => setStatusMsg(msg);
+
+  useEffect(() => {
+    if (selectedRow === null || !scrollContainerRef.current) return;
+    const container = scrollContainerRef.current;
+    const el = container.querySelector<HTMLElement>('[data-selected="true"]');
+    if (!el) return;
+    const theadHeight = theadRef.current?.offsetHeight ?? 0;
+    const elTop = el.offsetTop;
+    const elBottom = elTop + el.offsetHeight;
+    const viewTop = container.scrollTop + theadHeight;
+    const viewBottom = container.scrollTop + container.clientHeight;
+    if (elTop < viewTop) {
+      container.scrollTop = elTop - theadHeight;
+    } else if (elBottom > viewBottom) {
+      container.scrollTop = elBottom - container.clientHeight;
+    }
+  }, [selectedRow]);
 
   useKeyboardNav({
     tasks,
@@ -84,7 +104,7 @@ export default function TaskList({ filter }: TaskListProps) {
 
   if (isLoading) {
     return (
-      <div className="flex justify-center items-center h-full text-text-primary">
+      <div className="flex justify-center items-center flex-1 min-h-0 text-text-primary">
         Loading...
       </div>
     );
@@ -92,7 +112,7 @@ export default function TaskList({ filter }: TaskListProps) {
 
   if (isError) {
     return (
-      <div className="flex flex-col justify-center items-center h-full gap-4 text-red-500">
+      <div className="flex flex-col justify-center items-center flex-1 min-h-0 gap-4 text-red-500">
         <p>Error loading tasks. Check server connection.</p>
         <button
           onClick={() => refetch()}
@@ -106,7 +126,7 @@ export default function TaskList({ filter }: TaskListProps) {
 
   if (!tasks || tasks.length === 0) {
     return (
-      <div className="w-full h-full flex flex-col">
+      <div className="w-full flex-1 min-h-0 flex flex-col">
         {formMode === 'create' && (
           <TaskForm mode="create" onClose={() => setFormMode(null)} />
         )}
@@ -118,7 +138,7 @@ export default function TaskList({ filter }: TaskListProps) {
   }
 
   return (
-    <div className="w-full h-full flex flex-col">
+    <div className="w-full flex-1 min-h-0 flex flex-col">
       <div className="shrink-0 flex justify-between items-center px-2 py-1 border-b border-border bg-bg-primary">
         <div className="font-mono text-xs opacity-60">Tasks: {tasks.length}</div>
         <div className="flex gap-2 items-center">
@@ -138,9 +158,9 @@ export default function TaskList({ filter }: TaskListProps) {
         <TaskForm mode="create" onClose={() => setFormMode(null)} />
       )}
 
-      <div className="flex-1 overflow-auto min-h-0">
+      <div className="flex-1 overflow-auto min-h-0" ref={scrollContainerRef}>
         <table className="w-full text-left border-collapse font-mono text-sm" data-testid="task-list">
-          <thead className="sticky top-0 bg-bg-primary z-10 border-b border-border">
+          <thead className="sticky top-0 bg-bg-primary z-10 border-b border-border" ref={theadRef}>
             <tr>
               <th className="p-2 w-12 text-right">ID</th>
               <th className="p-2 w-16">Age</th>
