@@ -1,6 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "pnpm --filter frontend build",
+  "buildCommand": "pnpm --filter frontend exec vite build",
   "outputDirectory": "frontend/dist",
   "rewrites": [
     {
