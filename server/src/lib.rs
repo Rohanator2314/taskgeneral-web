@@ -21,13 +21,13 @@ pub fn create_app(state: AppState) -> Router {
         .route("/api/version", get(version_handler))
         .route("/api/tasks", get(list_tasks).post(create_task))
         .route(
-            "/api/tasks/:uuid",
+            "/api/tasks/{uuid}",
             get(get_task).put(update_task).delete(delete_task),
         )
-        .route("/api/tasks/:uuid/complete", post(complete_task))
-        .route("/api/tasks/:uuid/uncomplete", post(uncomplete_task))
-        .route("/api/tasks/:uuid/start", post(start_task))
-        .route("/api/tasks/:uuid/stop", post(stop_task))
+        .route("/api/tasks/{uuid}/complete", post(complete_task))
+        .route("/api/tasks/{uuid}/uncomplete", post(uncomplete_task))
+        .route("/api/tasks/{uuid}/start", post(start_task))
+        .route("/api/tasks/{uuid}/stop", post(stop_task))
         .route("/api/sync/configure", post(configure_sync))
         .route("/api/sync", post(sync_now))
         .route("/api/data", axum::routing::delete(clear_data))

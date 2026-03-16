@@ -1,0 +1,14 @@
+# Rust build artifacts (large — excluded from Vercel deployment uploads)
+target/
+
+# Frontend build output (Vercel builds this itself)
+frontend/dist/
+frontend/node_modules/
+
+# Node.js
+node_modules/
+pnpm-lock.yaml
+
+# Local env files
+.env
+.env.local
