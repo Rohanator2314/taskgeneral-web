@@ -6,6 +6,8 @@ use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 #[tokio::main]
 async fn main() {
+    dotenv::dotenv().ok();
+
     tracing_subscriber::registry()
         .with(
             tracing_subscriber::EnvFilter::try_from_default_env()
@@ -14,11 +16,10 @@ async fn main() {
         .with(tracing_subscriber::fmt::layer())
         .init();
 
-    dotenv::dotenv().ok();
-
     let app = create_app().await;
 
-    let static_dir = std::env::var("TASKGENERAL_STATIC_DIR").unwrap_or_else(|_| "./frontend/dist".to_string());
+    let static_dir =
+        std::env::var("TASKGENERAL_STATIC_DIR").unwrap_or_else(|_| "./frontend/dist".to_string());
 
     let app = if Path::new(&static_dir).is_dir() {
         tracing::info!("Serving static files from {}", static_dir);

@@ -35,8 +35,8 @@ impl Auth {
         validation.set_audience(&["authenticated"]);
         validation.set_issuer(&[&self.supabase_url]);
 
-        let token_data = decode::<Claims>(token, &decoding_key, &validation)
-            .map_err(|e| e.to_string())?;
+        let token_data =
+            decode::<Claims>(token, &decoding_key, &validation).map_err(|e| e.to_string())?;
 
         Uuid::parse_str(&token_data.claims.sub).map_err(|e| e.to_string())
     }
