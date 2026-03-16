@@ -2,11 +2,19 @@ import { useState } from 'react';
 import { useSyncConfig, useSync, useClearData, useVersion } from '../api/hooks';
 import { useTheme } from '../theme/ThemeContext';
 
-interface SettingsPageProps {
-  onBack: () => void;
+interface Preferences {
+  defaultSort: string;
+  defaultStatus: string;
 }
 
-export default function SettingsPage({ onBack }: SettingsPageProps) {
+interface SettingsPageProps {
+  onBack: () => void;
+  prefs: Preferences;
+  updatePreferences: (updates: Partial<Preferences>) => void;
+  onResetToDefaults: () => void;
+}
+
+export default function SettingsPage({ onBack, prefs, updatePreferences, onResetToDefaults }: SettingsPageProps) {
   const [serverUrl, setServerUrl] = useState('');
   const [clientId, setClientId] = useState('');
   const [encryptionSecret, setEncryptionSecret] = useState('');
@@ -148,6 +156,46 @@ export default function SettingsPage({ onBack }: SettingsPageProps) {
               className="border border-border px-3 py-1 hover:border-accent transition-colors"
             >
               {theme === 'dark' ? '☀ Light' : '🌙 Dark'}
+            </button>
+          </div>
+        </section>
+
+        <section className="border-t border-border pt-6">
+          <h2 className="text-accent font-bold text-xs uppercase tracking-widest mb-4">[ Defaults ]</h2>
+          <div className="space-y-3 text-sm">
+            <div className="flex items-center justify-between">
+              <span>Default Sort</span>
+              <select
+                value={prefs.defaultSort}
+                onChange={(e) => updatePreferences({ defaultSort: e.target.value })}
+                className="bg-bg-primary border border-border px-2 py-1 focus:border-accent focus:outline-none"
+              >
+                <option value="urgency">Urgency</option>
+                <option value="due">Due Date</option>
+                <option value="priority">Priority</option>
+                <option value="entry">Entry Date</option>
+                <option value="modified">Modified</option>
+                <option value="description">Description</option>
+              </select>
+            </div>
+            <div className="flex items-center justify-between">
+              <span>Default Filter</span>
+              <select
+                value={prefs.defaultStatus}
+                onChange={(e) => updatePreferences({ defaultStatus: e.target.value })}
+                className="bg-bg-primary border border-border px-2 py-1 focus:border-accent focus:outline-none"
+              >
+                <option value="">[Status: All]</option>
+                <option value="pending">Pending</option>
+                <option value="completed">Completed</option>
+                <option value="waiting">Waiting</option>
+              </select>
+            </div>
+            <button
+              onClick={onResetToDefaults}
+              className="text-xs border border-border px-2 py-1 hover:border-accent transition-colors"
+            >
+              Reset View to Defaults
             </button>
           </div>
         </section>

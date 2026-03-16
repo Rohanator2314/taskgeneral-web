@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useTheme } from '../theme/ThemeContext'
+import { usePreferences } from '../hooks/usePreferences'
 import TaskList from './TaskList'
 import SettingsPage from './SettingsPage'
 import FilterBar from './FilterBar'
@@ -11,15 +12,19 @@ export default function Layout() {
   const { theme, toggleTheme } = useTheme()
   const isDark = theme === 'dark'
   const [view, setView] = useState<View>('tasks')
+  const { prefs, updatePreferences, getDefaultFilter } = usePreferences()
 
   const [filter, setFilter] = useState<TaskFilterParams>(() => {
     const params = new URLSearchParams(window.location.search);
-    const f: TaskFilterParams = {};
-    if (params.get('status')) f.status = params.get('status')!;
-    if (params.get('project')) f.project = params.get('project')!;
-    if (params.get('tag')) f.tag = params.get('tag')!;
-    if (params.get('sort_by')) f.sort_by = params.get('sort_by')!;
-    return f;
+    if (params.toString()) {
+      const f: TaskFilterParams = { sort_by: 'urgency' };
+      if (params.get('status')) f.status = params.get('status')!;
+      if (params.get('project')) f.project = params.get('project')!;
+      if (params.get('tag')) f.tag = params.get('tag')!;
+      if (params.get('sort_by')) f.sort_by = params.get('sort_by')!;
+      return f;
+    }
+    return getDefaultFilter();
   });
 
   useEffect(() => {
@@ -36,12 +41,23 @@ export default function Layout() {
     if (newFilter.status) params.set('status', newFilter.status);
     if (newFilter.project) params.set('project', newFilter.project);
     if (newFilter.tag) params.set('tag', newFilter.tag);
-    if (newFilter.sort_by) params.set('sort_by', newFilter.sort_by);
+    params.set('sort_by', newFilter.sort_by || 'urgency');
     
     const search = params.toString();
     const newUrl = search ? `?${search}` : window.location.pathname;
     window.history.pushState({}, '', newUrl);
     setFilter(newFilter);
+  };
+
+  const handleResetToDefaults = () => {
+    setFilter(getDefaultFilter());
+    const params = new URLSearchParams();
+    const f = getDefaultFilter();
+    if (f.status) params.set('status', f.status);
+    if (f.project) params.set('project', f.project);
+    if (f.tag) params.set('tag', f.tag);
+    params.set('sort_by', f.sort_by || 'urgency');
+    window.history.pushState({}, '', params.toString() ? `?${params.toString()}` : window.location.pathname);
   };
 
   return (
@@ -82,7 +98,12 @@ export default function Layout() {
 
         <main className="flex-1 relative overflow-hidden flex flex-col">
           {view === 'settings' ? (
-            <SettingsPage onBack={() => setView('tasks')} />
+            <SettingsPage 
+              onBack={() => setView('tasks')} 
+              prefs={prefs}
+              updatePreferences={updatePreferences}
+              onResetToDefaults={handleResetToDefaults}
+            />
           ) : (
             <>
               <FilterBar filter={filter} onFilterChange={handleFilterChange} />

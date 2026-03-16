@@ -138,14 +138,26 @@ export default function TaskForm({ mode, task, onClose }: TaskFormProps) {
               <option value="M">M</option>
               <option value="L">L</option>
             </select>
-            <input
-              type="text"
-              className={`${inputClass} w-32`}
-              placeholder="Due (yyyy-mm-dd)"
-              value={due}
-              onChange={(e) => setDue(e.target.value)}
-              onKeyDown={handleKeyDown}
-            />
+            <div className="flex items-center gap-1">
+              <input
+                type="date"
+                className={`${inputClass} w-32`}
+                placeholder="Due"
+                value={due}
+                onChange={(e) => setDue(e.target.value)}
+                onKeyDown={handleKeyDown}
+              />
+              {due && (
+                <button
+                  type="button"
+                  onClick={() => setDue('')}
+                  className="text-xs text-red-500 hover:text-red-400"
+                  title="Clear due date"
+                >
+                  ×
+                </button>
+              )}
+            </div>
             <div className="flex-grow text-right">
               {statusMsg && <span className="text-green-500 font-mono text-xs mr-2">{statusMsg}</span>}
               <button type="button" onClick={onClose} className="mr-2 text-text-primary hover:text-accent">Cancel</button>

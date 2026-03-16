@@ -60,12 +60,12 @@ export default function FilterBar({ filter, onFilterChange }: FilterBarProps) {
       <div className="flex items-center gap-2 ml-auto">
         <span className="text-accent opacity-70">S:</span>
         <select
-          value={filter.sort_by || ''}
+          value={filter.sort_by || 'urgency'}
           onChange={(e) => handleChange('sort_by', e.target.value)}
           className="bg-bg-primary border border-border text-text-primary px-1 py-0.5 focus:border-accent focus:outline-none"
           title="Sort By"
         >
-          <option value="">[Sort: Urgency]</option>
+          <option value="urgency">[Sort: Urgency]</option>
           <option value="due">Due Date</option>
           <option value="priority">Priority</option>
           <option value="entry">Entry Date</option>
