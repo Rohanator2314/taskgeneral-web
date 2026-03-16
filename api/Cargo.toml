@@ -5,7 +5,7 @@ edition = "2021"
 
 [[bin]]
 name = "api"
-path = "src/main.rs"
+path = "main.rs"
 
 [dependencies]
 taskgeneral-server = { path = "../server" }
