@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useTheme } from '../theme/ThemeContext'
 import { usePreferences } from '../hooks/usePreferences'
+import { useAuth } from '../auth/AuthContext'
 import TaskList from './TaskList'
 import SettingsPage from './SettingsPage'
 import FilterBar from './FilterBar'
@@ -10,6 +11,7 @@ type View = 'tasks' | 'settings'
 
 export default function Layout() {
   const { theme, toggleTheme } = useTheme()
+  const { signOut } = useAuth()
   const isDark = theme === 'dark'
   const [view, setView] = useState<View>('tasks')
   const { prefs, updatePreferences, getDefaultFilter } = usePreferences()
@@ -81,6 +83,13 @@ export default function Layout() {
               title={isDark ? "Switch to Light Mode" : "Switch to Dark Mode"}
             >
               [{isDark ? '☀' : '🌙'}]
+            </button>
+            <button 
+              onClick={() => signOut()}
+              className="hover:text-accent transition-colors cursor-pointer"
+              title="Sign Out"
+            >
+              [Logout]
             </button>
             <div className="flex items-center gap-1 text-sm">
               <button

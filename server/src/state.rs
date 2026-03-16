@@ -1,8 +1,8 @@
 use std::sync::Arc;
-use taskgeneral_core::TaskManagerWrapper;
+use tokio_postgres::Client;
 
 #[derive(Clone)]
 pub struct AppState {
-    #[allow(dead_code)]
-    pub manager: Arc<TaskManagerWrapper>,
+    pub db: Arc<Client>,
+    pub auth: super::auth::Auth,
 }

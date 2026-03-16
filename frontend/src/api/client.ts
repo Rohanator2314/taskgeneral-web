@@ -20,10 +20,33 @@ export class ApiError extends Error {
 }
 
 async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
+  const supabaseAuth = localStorage.getItem('supabase.auth.token');
+  let accessToken: string | null = null;
+  
+  if (supabaseAuth) {
+    try {
+      const parsed = JSON.parse(supabaseAuth);
+      accessToken = parsed?.access_token || parsed?.session?.access_token || null;
+    } catch {
+      // Ignore parse errors
+    }
+  }
+
+  const headers: Record<string, string> = { 
+    'Content-Type': 'application/json',
+    ...(accessToken ? { 'Authorization': `Bearer ${accessToken}` } : {}),
+    ...(options?.headers as Record<string, string> || {}),
+  };
+  
   const res = await fetch(`${BASE_URL}${path}`, {
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    headers,
     ...options,
   });
+  
+  if (res.status === 401) {
+    window.location.href = '/login';
+    throw new ApiError('Unauthorized');
+  }
   
   if (!res.ok) {
     const body = await res.json().catch(() => ({ error: res.statusText }));

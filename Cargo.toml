@@ -13,12 +13,22 @@ path = "api/handler.rs"
 
 [dependencies]
 taskgeneral-server = { path = "server" }
-taskgeneral-core = { git = "https://github.com/Rohanator2314/taskgeneral-core.git" }
 vercel_runtime = { version = "2", features = ["axum"] }
 axum = { version = "0.8" }
 tokio = { version = "1", features = ["full"] }
 tower = { version = "0.5" }
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+tokio-postgres = { version = "0.7", features = ["with-uuid-0_8", "with-chrono-0_4"] }
+native-tls = "0.2"
+postgres-native-tls = "0.5"
+jsonwebtoken = "9"
+uuid = { version = "0.8", features = ["v4", "serde"] }
+chrono = "0.4"
+dotenv = "0.15"
+thiserror = "2"
+anyhow = "1"
+reqwest = { version = "0.12", features = ["json"] }
+base64 = "0.22"
 
 [profile.release]
 codegen-units = 1
