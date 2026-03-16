@@ -6,53 +6,43 @@ import type {
   SyncResult,
   WorkingSetItem,
 } from './types';
+import { supabase } from '../auth/supabaseClient';
 
 const BASE_URL = '/api';
 
 export class ApiError extends Error {
   public readonly error: string;
-  
-  constructor(error: string) {
+  public readonly status: number;
+
+  constructor(error: string, status = 0) {
     super(error);
     this.name = 'ApiError';
     this.error = error;
+    this.status = status;
   }
 }
 
 async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
-  const supabaseAuth = localStorage.getItem('supabase.auth.token');
-  let accessToken: string | null = null;
-  
-  if (supabaseAuth) {
-    try {
-      const parsed = JSON.parse(supabaseAuth);
-      accessToken = parsed?.access_token || parsed?.session?.access_token || null;
-    } catch {
-      // Ignore parse errors
-    }
+  const { data: { session } } = await supabase.auth.getSession();
+  const accessToken = session?.access_token ?? null;
+
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+    ...((options?.headers as Record<string, string>) ?? {}),
+  };
+
+  const res = await fetch(`${BASE_URL}${path}`, { ...options, headers });
+
+  if (res.status === 401) {
+    throw new ApiError('Unauthorized', 401);
   }
 
-  const headers: Record<string, string> = { 
-    'Content-Type': 'application/json',
-    ...(accessToken ? { 'Authorization': `Bearer ${accessToken}` } : {}),
-    ...(options?.headers as Record<string, string> || {}),
-  };
-  
-  const res = await fetch(`${BASE_URL}${path}`, {
-    headers,
-    ...options,
-  });
-  
-  if (res.status === 401) {
-    window.location.href = '/login';
-    throw new ApiError('Unauthorized');
-  }
-  
   if (!res.ok) {
     const body = await res.json().catch(() => ({ error: res.statusText }));
-    throw new ApiError(body.error ?? res.statusText);
+    throw new ApiError(body.error ?? res.statusText, res.status);
   }
-  
+
   if (res.status === 204) return undefined as T;
   return res.json();
 }

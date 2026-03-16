@@ -85,7 +85,10 @@ pub async fn create_app() -> Router {
         }
     });
 
-    let auth = Auth::from_env();
+    let mut auth = Auth::from_env();
+    auth.load_jwks()
+        .await
+        .expect("Failed to load Supabase JWKS");
     let state = AppState {
         db: Arc::new(client),
         auth,
@@ -137,7 +140,10 @@ async fn auth_middleware(
             request.extensions_mut().insert(UserId(user_id));
             Ok(next.run(request).await)
         }
-        Err(_) => Err(StatusCode::UNAUTHORIZED),
+        Err(e) => {
+            tracing::warn!("JWT validation failed: {}", e);
+            Err(StatusCode::UNAUTHORIZED)
+        }
     }
 }
 
