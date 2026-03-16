@@ -152,7 +152,7 @@ export default function TaskForm({ mode, task, onClose }: TaskFormProps) {
                 <button
                   type="button"
                   onClick={() => setDue('')}
-                  className="text-xs text-red-500 hover:text-red-400"
+                  className="text-xs text-text-primary hover:text-accent"
                   title="Clear due date"
                 >
                   ×
