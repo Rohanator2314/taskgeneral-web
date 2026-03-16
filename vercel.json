@@ -1,6 +1,12 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "installCommand": "pnpm install --frozen-lockfile",
-  "buildCommand": "pnpm --filter frontend exec vite build && cargo build --release --manifest-path api/Cargo.toml --bin api",
-  "outputDirectory": "frontend/dist"
+  "buildCommand": "pnpm --filter frontend exec vite build",
+  "outputDirectory": "frontend/dist",
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "/api/handler"
+    }
+  ]
 }

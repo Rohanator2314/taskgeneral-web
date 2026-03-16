@@ -1,6 +1,24 @@
 [workspace]
-members = ["server", "api"]
+members = ["server"]
 resolver = "2"
+
+[package]
+name = "taskgeneral-api"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "handler"
+path = "api/handler.rs"
+
+[dependencies]
+taskgeneral-server = { path = "server" }
+taskgeneral-core = { git = "https://github.com/Rohanator2314/taskgeneral-core.git" }
+vercel_runtime = { version = "2", features = ["axum"] }
+axum = { version = "0.8" }
+tokio = { version = "1", features = ["full"] }
+tower = { version = "0.5" }
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
 [profile.release]
 codegen-units = 1
