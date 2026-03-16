@@ -12,7 +12,7 @@ export default function TaskForm({ mode, task, onClose }: TaskFormProps) {
   const [description, setDescription] = useState(task?.description || '');
   const [project, setProject] = useState(task?.project || '');
   const [priority, setPriority] = useState(task?.priority || '');
-  const [due, setDue] = useState(task?.due || '');
+  const [due, setDue] = useState(task?.due ? task.due.slice(0, 10) : '');
   const [tags, setTags] = useState(task?.tags?.join(' ') || '');
   const [statusMsg, setStatusMsg] = useState<string | null>(null);
 
@@ -46,7 +46,8 @@ export default function TaskForm({ mode, task, onClose }: TaskFormProps) {
       if (description !== task.description) updates.description = description;
       if (project !== (task.project || '')) updates.project = project;
       if (priority !== (task.priority || '')) updates.priority = priority;
-      if (due !== (task.due || '')) updates.due = due;
+      const existingDueDateOnly = task.due ? task.due.slice(0, 10) : '';
+      if (due !== existingDueDateOnly) updates.due = due ? `${due}T00:00:00Z` : '';
       
       const currentTags = task.tags || [];
       const newTags = tags.split(' ').filter(t => t.trim());
