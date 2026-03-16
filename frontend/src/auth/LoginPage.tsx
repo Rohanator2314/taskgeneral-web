@@ -57,7 +57,7 @@ export default function LoginPage() {
           fontSize: '1.5rem',
           marginBottom: '1.5rem',
           textAlign: 'center',
-          color: '#4ade80'
+          color: '#c084fc'
         }}>
           TaskGeneral
         </h1>
@@ -140,8 +140,8 @@ export default function LoginPage() {
             style={{
               width: '100%',
               padding: '0.75rem',
-              backgroundColor: loading ? '#333' : '#4ade80',
-              color: loading ? '#888' : '#000',
+              backgroundColor: loading ? '#333' : '#c084fc',
+              color: loading ? '#888' : '#0d1117',
               border: 'none',
               borderRadius: '4px',
               fontFamily: 'inherit',
@@ -165,7 +165,7 @@ export default function LoginPage() {
             width: '100%',
             padding: '0.5rem',
             backgroundColor: 'transparent',
-            color: '#4ade80',
+            color: '#c084fc',
             border: 'none',
             fontFamily: 'inherit',
             fontSize: '0.875rem',
