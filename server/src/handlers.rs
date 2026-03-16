@@ -199,6 +199,16 @@ pub async fn get_task(
     Ok(Json(row_to_task_info(&row)))
 }
 
+fn parse_timestamp(s: &Option<String>) -> Result<Option<chrono::DateTime<chrono::Utc>>, AppError> {
+    match s {
+        None => Ok(None),
+        Some(v) if v.is_empty() => Ok(None),
+        Some(v) => chrono::DateTime::parse_from_rfc3339(v)
+            .map(|dt| Some(dt.with_timezone(&chrono::Utc)))
+            .map_err(|e| AppError::BadRequest(format!("invalid date '{v}': {e}"))),
+    }
+}
+
 pub async fn update_task(
     State(state): State<AppState>,
     Extension(user_id): Extension<UserId>,
@@ -207,6 +217,8 @@ pub async fn update_task(
 ) -> Result<Json<TaskInfo>, AppError> {
     let user_id = user_id.0;
     let now = chrono::Utc::now();
+    let due = parse_timestamp(&req.due)?;
+    let wait = parse_timestamp(&req.wait)?;
 
     let row = state
         .db
@@ -227,8 +239,8 @@ pub async fn update_task(
                 &req.project,
                 &req.tags,
                 &req.priority,
-                &req.due,
-                &req.wait,
+                &due,
+                &wait,
                 &req.recur,
                 &now,
                 &uuid,
