@@ -14,6 +14,8 @@ interface UseKeyboardNavOptions {
   onStart: (uuid: string) => void;
   onStop: (uuid: string) => void;
   onDelete: (uuid: string) => void;
+  onWait: (uuid: string) => void;
+  onSync: () => void;
 }
 
 /**
@@ -50,12 +52,54 @@ export function useKeyboardNav(options: UseKeyboardNavOptions): void {
     onStart,
     onStop,
     onDelete,
+    onWait,
+    onSync,
   } = options;
 
   const lastKeyRef = useRef<string | null>(null);
   const lastKeyTimeRef = useRef<number>(0);
 
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
+    // CTRL+S to trigger sync
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+      e.preventDefault();
+      onSync();
+      lastKeyRef.current = e.key;
+      lastKeyTimeRef.current = Date.now();
+      return;
+    }
+
+    const now = Date.now();
+    const timeSinceLastKey = now - lastKeyTimeRef.current;
+
+    // S/F toggle: checked BEFORE the input guard so they work
+    // when the dropdown is already focused (toggle-off case).
+    if (e.key === 'F') {
+      e.preventDefault();
+      const filterSelect = document.querySelector<HTMLSelectElement>('[data-filter-input="status"]');
+      if (document.activeElement === filterSelect) {
+        filterSelect?.blur();
+      } else {
+        filterSelect?.focus();
+      }
+      lastKeyRef.current = e.key;
+      lastKeyTimeRef.current = now;
+      return;
+    }
+
+    if (e.key === 'S') {
+      e.preventDefault();
+      const sortSelect = document.querySelector<HTMLSelectElement>('[data-sort-input="sort_by"]');
+      if (document.activeElement === sortSelect) {
+        sortSelect?.blur();
+      } else {
+        sortSelect?.focus();
+      }
+      lastKeyRef.current = e.key;
+      lastKeyTimeRef.current = now;
+      return;
+    }
+
     // Guard: never intercept when form inputs are focused
     if (
       document.activeElement instanceof HTMLInputElement ||
@@ -69,9 +113,6 @@ export function useKeyboardNav(options: UseKeyboardNavOptions): void {
     if (e.ctrlKey || e.metaKey) {
       return;
     }
-
-    const now = Date.now();
-    const timeSinceLastKey = now - lastKeyTimeRef.current;
 
     if (e.key === 'j' || e.key === 'ArrowDown') {
       e.preventDefault();
@@ -204,6 +245,15 @@ export function useKeyboardNav(options: UseKeyboardNavOptions): void {
         return;
       }
 
+      if (e.key === 'w') {
+        e.preventDefault();
+        setPendingDelete(null);
+        onWait(task.uuid);
+        lastKeyRef.current = e.key;
+        lastKeyTimeRef.current = now;
+        return;
+      }
+
       if (e.key === 'd') {
         e.preventDefault();
         if (pendingDelete === task.uuid) {
@@ -241,6 +291,8 @@ export function useKeyboardNav(options: UseKeyboardNavOptions): void {
     onStart,
     onStop,
     onDelete,
+    onWait,
+    onSync,
   ]);
 
   useEffect(() => {

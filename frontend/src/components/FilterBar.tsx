@@ -24,6 +24,7 @@ export default function FilterBar({ filter, onFilterChange }: FilterBarProps) {
           onChange={(e) => handleChange('status', e.target.value)}
           className="bg-bg-primary border border-border text-text-primary px-1 py-0.5 focus:border-accent focus:outline-none"
           title="Filter by Status"
+          data-filter-input="status"
         >
           <option value="">[Status: All]</option>
           <option value="pending">Pending</option>
@@ -64,6 +65,7 @@ export default function FilterBar({ filter, onFilterChange }: FilterBarProps) {
           onChange={(e) => handleChange('sort_by', e.target.value)}
           className="bg-bg-primary border border-border text-text-primary px-1 py-0.5 focus:border-accent focus:outline-none"
           title="Sort By"
+          data-sort-input="sort_by"
         >
           <option value="urgency">[Sort: Urgency]</option>
           <option value="due">Due Date</option>

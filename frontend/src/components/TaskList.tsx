@@ -6,10 +6,16 @@ import {
   useUncompleteTask,
   useStartTask,
   useStopTask,
+  useUpdateTask,
 } from '../api/hooks';
 import type { TaskInfo, TaskFilterParams } from '../api/types';
 import TaskForm from './TaskForm';
 import { useKeyboardNav } from '../hooks/useKeyboardNav';
+
+interface TaskListProps {
+  filter?: TaskFilterParams;
+  onSync?: () => void;
+}
 
 const formatDuration = (dateStr?: string): string => {
   if (!dateStr) return '';
@@ -42,7 +48,7 @@ interface TaskListProps {
   filter?: TaskFilterParams;
 }
 
-export default function TaskList({ filter }: TaskListProps) {
+export default function TaskList({ filter, onSync }: TaskListProps) {
   const { data: tasks, isLoading, isError, refetch } = useTaskList(filter);
   const [selectedRow, setSelectedRow] = useState<number | null>(null);
   const [formMode, setFormMode] = useState<'create' | 'edit' | null>(null);
@@ -54,6 +60,7 @@ export default function TaskList({ filter }: TaskListProps) {
   const uncompleteTask = useUncompleteTask();
   const startTask = useStartTask();
   const stopTask = useStopTask();
+  const updateTask = useUpdateTask();
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const theadRef = useRef<HTMLTableSectionElement>(null);
@@ -92,6 +99,24 @@ export default function TaskList({ filter }: TaskListProps) {
     onStart: (uuid) => startTask.mutate(uuid, { onSuccess: () => flash('Started') }),
     onStop: (uuid) => stopTask.mutate(uuid, { onSuccess: () => flash('Stopped') }),
     onDelete: (uuid) => deleteTask.mutate(uuid, { onSuccess: () => { flash('Deleted'); setSelectedRow(null); } }),
+    onWait: (uuid) => {
+      const task = tasks?.find(t => t.uuid === uuid);
+      if (!task) return;
+      const waitTag = task.tags?.find(t => t.startsWith('wait:'));
+      const currentTags = task.tags || [];
+      let newTags: string[];
+      if (waitTag) {
+        newTags = currentTags.filter(t => t !== waitTag);
+      } else {
+        const waitDate = new Date().toISOString().slice(0, 10);
+        newTags = [...currentTags, `wait:${waitDate}`];
+      }
+      updateTask.mutate(
+        { uuid, updates: { tags: newTags } },
+        { onSuccess: () => flash(waitTag ? 'Wait cleared' : 'Waiting') }
+      );
+    },
+    onSync: onSync || (() => {}),
   });
 
   const confirmDelete = (uuid: string) => {
@@ -324,7 +349,7 @@ export default function TaskList({ filter }: TaskListProps) {
 
       <div className="shrink-0 border-t border-border px-2 py-1">
         <div className="font-mono text-xs opacity-50 text-text-primary">
-          j/k↑↓:nav | a:add | e:edit | c:comp | u:uncomp | s:start/stop | d:del | esc:cancel
+          j/k↑↓:nav | a:add | e:edit | c:comp | u:uncomp | s:start/stop | w:wait | d:del | /:proj | F:filter | S:sort | ctrl+s:sync | esc:cancel
         </div>
       </div>
     </div>

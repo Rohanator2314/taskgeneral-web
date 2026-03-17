@@ -116,6 +116,16 @@ export async function configureSyncServer(config: SyncConfig): Promise<void> {
   });
 }
 
+export interface SyncConfigStatus {
+  configured: boolean;
+  server_url: string | null;
+  client_id: string | null;
+}
+
+export async function getSyncConfigStatus(): Promise<SyncConfigStatus> {
+  return apiFetch<SyncConfigStatus>('/sync/config');
+}
+
 export async function syncNow(): Promise<SyncResult> {
   return apiFetch<SyncResult>('/sync', {
     method: 'POST',

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useTheme } from '../theme/ThemeContext'
 import { usePreferences } from '../hooks/usePreferences'
 import { useAuth } from '../auth/AuthContext'
+import { useSyncConfigStatus, useSync } from '../api/hooks'
 import TaskList from './TaskList'
 import SettingsPage from './SettingsPage'
 import FilterBar from './FilterBar'
@@ -15,6 +16,9 @@ export default function Layout() {
   const isDark = theme === 'dark'
   const [view, setView] = useState<View>('tasks')
   const { prefs, updatePreferences, getDefaultFilter } = usePreferences()
+  const { data: syncStatus } = useSyncConfigStatus()
+  const syncMutation = useSync()
+  const [isSyncing, setIsSyncing] = useState(false)
 
   const [filter, setFilter] = useState<TaskFilterParams>(() => {
     const params = new URLSearchParams(window.location.search);
@@ -60,6 +64,14 @@ export default function Layout() {
     if (f.tag) params.set('tag', f.tag);
     params.set('sort_by', f.sort_by || 'urgency');
     window.history.pushState({}, '', params.toString() ? `?${params.toString()}` : window.location.pathname);
+  };
+
+  const handleSync = () => {
+    if (isSyncing || !syncStatus?.configured) return;
+    setIsSyncing(true);
+    syncMutation.mutate(undefined, {
+      onSettled: () => setIsSyncing(false),
+    });
   };
 
   return (
@@ -116,15 +128,29 @@ export default function Layout() {
           ) : (
             <>
               <FilterBar filter={filter} onFilterChange={handleFilterChange} />
-              <TaskList filter={filter} />
+              <TaskList filter={filter} onSync={handleSync} />
             </>
           )}
         </main>
 
         <footer className="border-t border-border p-2 text-sm flex items-center gap-2 bg-bg-primary select-none">
           <span className="text-accent font-bold">└─</span>
-          <span className="text-green-500">●</span>
-          <span>Connected</span>
+          {isSyncing ? (
+            <>
+              <span className="text-green-500 animate-pulse">●</span>
+              <span>Syncing...</span>
+            </>
+          ) : syncStatus?.configured ? (
+            <>
+              <span className="text-green-500">●</span>
+              <span>Sync configured</span>
+            </>
+          ) : (
+            <>
+              <span className="text-yellow-500">●</span>
+              <span>Sync not configured</span>
+            </>
+          )}
           <span className="text-border">|</span>
           <span>Last sync: never</span>
           <span className="flex-1 text-border overflow-hidden whitespace-nowrap">

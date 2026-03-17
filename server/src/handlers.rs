@@ -359,18 +359,61 @@ pub async fn stop_task(
 }
 
 pub async fn configure_sync(
-    State(_state): State<AppState>,
-    Json(_req): Json<ConfigureSyncRequest>,
+    State(state): State<AppState>,
+    Extension(user_id): Extension<UserId>,
+    Json(req): Json<ConfigureSyncRequest>,
 ) -> Result<Json<serde_json::Value>, AppError> {
-    Ok(Json(
-        json!({ "status": "not implemented - use TaskChampion CLI for sync" }),
-    ))
+    let user_id = user_id.0;
+    state
+        .db
+        .execute(
+            "INSERT INTO sync_config (user_id, server_url, client_id, encryption_secret_encrypted)
+             VALUES ($1, $2, $3, $4)
+             ON CONFLICT (user_id) DO UPDATE SET
+                server_url = EXCLUDED.server_url,
+                client_id = EXCLUDED.client_id,
+                encryption_secret_encrypted = EXCLUDED.encryption_secret_encrypted",
+            &[
+                &user_id,
+                &req.server_url,
+                &req.client_id,
+                &req.encryption_secret,
+            ],
+        )
+        .await
+        .map_err(|e| AppError::Database(e.to_string()))?;
+    Ok(Json(json!({ "status": "ok" })))
 }
 
-pub async fn sync_now(State(_state): State<AppState>) -> Result<Json<serde_json::Value>, AppError> {
-    Ok(Json(
-        json!({ "status": "not implemented - use TaskChampion CLI for sync" }),
-    ))
+pub async fn get_sync_config(
+    State(state): State<AppState>,
+    Extension(user_id): Extension<UserId>,
+) -> Result<Json<serde_json::Value>, AppError> {
+    let user_id = user_id.0;
+    let rows = state
+        .db
+        .query(
+            "SELECT server_url, client_id FROM sync_config WHERE user_id = $1",
+            &[&user_id],
+        )
+        .await
+        .map_err(|e| AppError::Database(e.to_string()))?;
+
+    if rows.is_empty() {
+        return Ok(Json(json!({ "configured": false, "server_url": null, "client_id": null })));
+    }
+    let row = rows.first().unwrap();
+    let server_url: Option<String> = row.get(0);
+    let client_id: Option<String> = row.get(1);
+    Ok(Json(json!({
+        "configured": server_url.is_some(),
+        "server_url": server_url,
+        "client_id": client_id,
+    })))
+}
+
+pub async fn sync_now(State(_state): State<AppState>, Extension(_user_id): Extension<UserId>) -> Result<Json<serde_json::Value>, AppError> {
+    Ok(Json(json!({ "success": false, "message": "Sync not yet implemented." })))
 }
 
 pub async fn clear_data(

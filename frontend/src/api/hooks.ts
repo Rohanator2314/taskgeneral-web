@@ -108,6 +108,13 @@ export function useSyncConfig() {
   });
 }
 
+export function useSyncConfigStatus() {
+  return useQuery({
+    queryKey: ['syncConfigStatus'],
+    queryFn: () => client.getSyncConfigStatus(),
+  });
+}
+
 export function useSync() {
   const queryClient = useQueryClient();
   return useMutation({

@@ -111,10 +111,10 @@ export default function TaskForm({ mode, task, onClose }: TaskFormProps) {
               onKeyDown={handleKeyDown}
             />
           </div>
-          <div className="flex gap-2 text-sm">
+          <div className="flex gap-2 text-sm flex-nowrap overflow-x-auto">
             <input
               type="text"
-              className={`${inputClass} w-32`}
+              className={`${inputClass} w-32 shrink-0`}
               placeholder="Project"
               value={project}
               onChange={(e) => setProject(e.target.value)}
@@ -122,14 +122,14 @@ export default function TaskForm({ mode, task, onClose }: TaskFormProps) {
             />
             <input
               type="text"
-              className={`${inputClass} w-48`}
+              className={`${inputClass} w-48 shrink-0`}
               placeholder="Tags (space sep)"
               value={tags}
               onChange={(e) => setTags(e.target.value)}
               onKeyDown={handleKeyDown}
             />
             <select
-              className={`${inputClass} w-20`}
+              className={`${inputClass} w-20 shrink-0`}
               value={priority}
               onChange={(e) => setPriority(e.target.value)}
               onKeyDown={handleKeyDown}
@@ -139,7 +139,7 @@ export default function TaskForm({ mode, task, onClose }: TaskFormProps) {
               <option value="M">M</option>
               <option value="L">L</option>
             </select>
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1 shrink-0">
               <input
                 type="date"
                 className={`${inputClass} w-32`}
@@ -159,9 +159,9 @@ export default function TaskForm({ mode, task, onClose }: TaskFormProps) {
                 </button>
               )}
             </div>
-            <div className="flex-grow text-right">
-              {statusMsg && <span className="text-green-500 font-mono text-xs mr-2">{statusMsg}</span>}
-              <button type="button" onClick={onClose} className="mr-2 text-text-primary hover:text-accent">Cancel</button>
+            <div className="flex-grow text-right shrink-0 flex items-center justify-end gap-2">
+              {statusMsg && <span className="text-green-500 font-mono text-xs">{statusMsg}</span>}
+              <button type="button" onClick={onClose} className="text-text-primary hover:text-accent">Cancel</button>
               <button type="submit" className="text-accent hover:text-white border border-accent px-2">Save</button>
             </div>
           </div>

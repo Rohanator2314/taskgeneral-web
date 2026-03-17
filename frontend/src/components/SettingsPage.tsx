@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useSyncConfig, useSync, useClearData, useVersion } from '../api/hooks';
+import { useState, useEffect } from 'react';
+import { useSyncConfig, useSync, useClearData, useVersion, useSyncConfigStatus } from '../api/hooks';
 import { useTheme } from '../theme/ThemeContext';
 
 interface Preferences {
@@ -24,10 +24,18 @@ export default function SettingsPage({ onBack, prefs, updatePreferences, onReset
 
   const { theme, toggleTheme } = useTheme();
   const { data: version } = useVersion();
+  const { data: syncStatus } = useSyncConfigStatus();
 
   const syncConfigMutation = useSyncConfig();
   const syncMutation = useSync();
   const clearDataMutation = useClearData();
+
+  useEffect(() => {
+    if (syncStatus) {
+      setServerUrl(syncStatus.server_url ?? '');
+      setClientId(syncStatus.client_id ?? '');
+    }
+  }, [syncStatus]);
 
   const isBusy = syncConfigMutation.isPending || syncMutation.isPending || clearDataMutation.isPending;
 

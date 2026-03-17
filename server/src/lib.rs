@@ -19,8 +19,8 @@ pub mod types;
 
 use auth::Auth;
 use handlers::{
-    clear_data, complete_task, configure_sync, create_task, delete_task, get_task, get_working_set,
-    list_tasks, start_task, stop_task, sync_now, uncomplete_task, update_task,
+    clear_data, complete_task, configure_sync, create_task, delete_task, get_sync_config, get_task,
+    get_working_set, list_tasks, start_task, stop_task, sync_now, uncomplete_task, update_task,
 };
 use state::AppState;
 
@@ -105,6 +105,7 @@ pub async fn create_app() -> Router {
         .route("/api/tasks/{uuid}/start", post(start_task))
         .route("/api/tasks/{uuid}/stop", post(stop_task))
         .route("/api/sync/configure", post(configure_sync))
+        .route("/api/sync/config", get(get_sync_config))
         .route("/api/sync", post(sync_now))
         .route("/api/data", axum::routing::delete(clear_data))
         .route("/api/tasks/working-set", get(get_working_set))
