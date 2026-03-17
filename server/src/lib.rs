@@ -59,13 +59,12 @@ pub async fn create_app() -> Router {
 
     let client = Arc::new(client);
 
-    let init_mgr = PostgresTaskManager::new_arc(
-        client.clone(),
-        &Uuid::nil().to_string(),
-        rt.clone(),
-    )
-    .expect("Failed to create init manager");
-    init_mgr.init_schema().await
+    let init_mgr =
+        PostgresTaskManager::new_arc(client.clone(), &Uuid::nil().to_string(), rt.clone())
+            .expect("Failed to create init manager");
+    init_mgr
+        .init_schema()
+        .await
         .expect("Failed to initialise schema");
 
     let mut auth = Auth::from_env();
@@ -73,11 +72,7 @@ pub async fn create_app() -> Router {
         .await
         .expect("Failed to load Supabase JWKS");
 
-    let state = AppState {
-        client,
-        rt,
-        auth,
-    };
+    let state = AppState { client, rt, auth };
 
     let protected = Router::new()
         .route("/api/tasks", get(list_tasks).post(create_task))

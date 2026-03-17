@@ -24,7 +24,7 @@ tokio-postgres = { version = "0.7", features = ["with-uuid-1", "with-chrono-0_4"
 native-tls = "0.2"
 postgres-native-tls = "0.5"
 
-taskgeneral-core = { path = "/tmp/taskgeneral-core", features = ["postgres"] }
+taskgeneral-core = { git = "https://github.com/Rohanator2314/taskgeneral-core.git", features = ["postgres"] }
 
 # Auth
 jsonwebtoken = "9"

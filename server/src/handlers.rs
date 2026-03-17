@@ -21,12 +21,8 @@ use crate::{
 };
 
 fn make_mgr(state: &AppState, user_id: Uuid) -> Result<PostgresTaskManager, AppError> {
-    PostgresTaskManager::new_arc(
-        state.client.clone(),
-        &user_id.to_string(),
-        state.rt.clone(),
-    )
-    .map_err(|e| AppError::Internal(e.to_string()))
+    PostgresTaskManager::new_arc(state.client.clone(), &user_id.to_string(), state.rt.clone())
+        .map_err(|e| AppError::Internal(e.to_string()))
 }
 
 fn core_task_to_api(t: taskgeneral_core::models::TaskInfo) -> TaskInfo {
@@ -245,7 +241,9 @@ pub async fn get_sync_config(
         .map_err(AppError::from)?;
 
     match result {
-        None => Ok(Json(json!({ "configured": false, "server_url": null, "client_id": null }))),
+        None => Ok(Json(
+            json!({ "configured": false, "server_url": null, "client_id": null }),
+        )),
         Some((server_url, client_id)) => Ok(Json(json!({
             "configured": server_url.is_some(),
             "server_url": server_url,
@@ -265,7 +263,9 @@ pub async fn sync_now(
         .map_err(|e| AppError::Internal(e.to_string()))?
         .map_err(AppError::from)?;
 
-    Ok(Json(json!({ "success": result.success, "message": result.message })))
+    Ok(Json(
+        json!({ "success": result.success, "message": result.message }),
+    ))
 }
 
 pub async fn clear_data(

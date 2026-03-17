@@ -2937,6 +2937,7 @@ dependencies = [
 [[package]]
 name = "taskgeneral-core"
 version = "0.1.0"
+source = "git+https://github.com/Rohanator2314/taskgeneral-core.git#c21939ca8eedfad441e05614076e07f91d1f9306"
 dependencies = [
  "chrono",
  "serde",
