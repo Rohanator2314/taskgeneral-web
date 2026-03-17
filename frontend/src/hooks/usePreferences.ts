@@ -43,7 +43,7 @@ const defaultUrgencyWeights: UrgencyWeights = {
 
 const defaultPreferences: Preferences = {
   defaultSort: 'urgency',
-  defaultStatus: '',
+  defaultStatus: 'pending',
   urgencyWeights: defaultUrgencyWeights,
 };
 

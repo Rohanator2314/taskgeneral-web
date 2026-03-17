@@ -44,6 +44,15 @@ const formatDue = (dateStr?: string): string => {
   return `${Math.floor(diffDays / 30)}mo`;
 };
 
+const isDueOrOverdue = (dateStr?: string): boolean => {
+  if (!dateStr) return false;
+  const due = new Date(dateStr);
+  const now = new Date();
+  const dueDate = new Date(due.getFullYear(), due.getMonth(), due.getDate());
+  const todayDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  return dueDate <= todayDate;
+};
+
 interface TaskListProps {
   filter?: TaskFilterParams;
   calculateUrgency?: (task: TaskInfo) => number;
@@ -350,7 +359,7 @@ export default function TaskList({ filter, onSync, calculateUrgency }: TaskListP
                     {task.tags?.map((t) => `+${t}`).join(' ')}
                   </td>
                   <td className="p-2 text-center">{task.priority?.[0]?.toUpperCase() || ''}</td>
-                  <td className="p-2 opacity-80">{formatDue(task.due)}</td>
+                  <td className={`p-2 ${isDueOrOverdue(task.due) ? 'text-red-500 font-bold' : 'opacity-80'}`}>{formatDue(task.due)}</td>
                   <td className="p-2 text-right">{urgency}</td>
                 </tr>
               );
