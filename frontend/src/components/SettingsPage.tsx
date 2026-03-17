@@ -12,9 +12,10 @@ interface SettingsPageProps {
   prefs: Preferences;
   updatePreferences: (updates: Partial<Preferences>) => void;
   onResetToDefaults: () => void;
+  onOpenUrgencyWeights: () => void;
 }
 
-export default function SettingsPage({ onBack, prefs, updatePreferences, onResetToDefaults }: SettingsPageProps) {
+export default function SettingsPage({ onBack, prefs, updatePreferences, onResetToDefaults, onOpenUrgencyWeights }: SettingsPageProps) {
   const [serverUrl, setServerUrl] = useState('');
   const [clientId, setClientId] = useState('');
   const [encryptionSecret, setEncryptionSecret] = useState('');
@@ -205,6 +206,21 @@ export default function SettingsPage({ onBack, prefs, updatePreferences, onReset
             >
               Reset View to Defaults
             </button>
+          </div>
+        </section>
+
+        <section className="border-t border-border pt-6">
+          <h2 className="text-accent font-bold text-xs uppercase tracking-widest mb-4">[ Sorting ]</h2>
+          <div className="space-y-3 text-sm">
+            <div className="flex items-center justify-between">
+              <span>Urgency Weights</span>
+              <button
+                onClick={onOpenUrgencyWeights}
+                className="border border-border hover:border-accent px-3 py-1 transition-colors"
+              >
+                Customize →
+              </button>
+            </div>
           </div>
         </section>
 

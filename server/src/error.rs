@@ -4,6 +4,7 @@ use axum::{
     Json,
 };
 use serde_json::json;
+use taskgeneral_core::error::TaskError;
 
 pub enum AppError {
     Database(String),
@@ -11,6 +12,19 @@ pub enum AppError {
     BadRequest(String),
     Unauthorized,
     Internal(String),
+}
+
+impl From<TaskError> for AppError {
+    fn from(e: TaskError) -> Self {
+        match e {
+            TaskError::TaskNotFound(_) => AppError::NotFound(e.to_string()),
+            TaskError::InvalidDescription(_)
+            | TaskError::InvalidDate(_)
+            | TaskError::InvalidUuid(_)
+            | TaskError::InvalidSyncUrl(_) => AppError::BadRequest(e.to_string()),
+            _ => AppError::Internal(e.to_string()),
+        }
+    }
 }
 
 impl IntoResponse for AppError {

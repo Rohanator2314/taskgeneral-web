@@ -4,6 +4,10 @@ use axum::{
     Json,
 };
 use serde_json::json;
+use taskgeneral_core::{
+    models::{TaskFilter, TaskUpdate},
+    storage::pg::PostgresTaskManager,
+};
 use uuid::Uuid;
 
 use crate::{
@@ -16,121 +20,61 @@ use crate::{
     UserId,
 };
 
-fn row_to_task_info(row: &tokio_postgres::Row) -> TaskInfo {
-    let uuid: Uuid = row.get(0);
-    TaskInfo {
-        uuid: uuid.to_string(),
-        description: row.get(1),
-        status: row.get(2),
-        project: row.get(3),
-        tags: row.get::<_, Option<Vec<String>>>(4).unwrap_or_default(),
-        priority: row.get(5),
-        entry: row
-            .get::<_, Option<chrono::DateTime<chrono::Utc>>>(6)
-            .map(|t| t.to_rfc3339()),
-        modified: row
-            .get::<_, Option<chrono::DateTime<chrono::Utc>>>(7)
-            .map(|t| t.to_rfc3339()),
-        due: row
-            .get::<_, Option<chrono::DateTime<chrono::Utc>>>(8)
-            .map(|t| t.to_rfc3339()),
-        wait: row
-            .get::<_, Option<chrono::DateTime<chrono::Utc>>>(9)
-            .map(|t| t.to_rfc3339()),
-        start: row
-            .get::<_, Option<chrono::DateTime<chrono::Utc>>>(10)
-            .map(|t| t.to_rfc3339()),
-        recur: row.get(11),
-        urgency: row.get::<_, Option<f64>>(12).unwrap_or(0.0),
-        is_active: row.get::<_, Option<bool>>(13).unwrap_or(false),
-        is_waiting: row.get::<_, Option<bool>>(14).unwrap_or(false),
-    }
+fn make_mgr(state: &AppState, user_id: Uuid) -> Result<PostgresTaskManager, AppError> {
+    PostgresTaskManager::new_arc(
+        state.client.clone(),
+        &user_id.to_string(),
+        state.rt.clone(),
+    )
+    .map_err(|e| AppError::Internal(e.to_string()))
 }
 
-const SELECT_COLS: &str = "uuid, description, status, project, tags, priority, entry, modified_at, due, wait, start, recur, urgency, is_active, is_waiting";
+fn core_task_to_api(t: taskgeneral_core::models::TaskInfo) -> TaskInfo {
+    TaskInfo {
+        uuid: t.uuid,
+        description: t.description,
+        status: t.status,
+        project: t.project,
+        tags: t.tags,
+        priority: t.priority,
+        entry: t.entry,
+        modified: t.modified,
+        due: t.due,
+        wait: t.wait,
+        start: t.start,
+        recur: t.recur,
+        urgency: t.urgency,
+        is_active: t.is_active,
+        is_waiting: t.is_waiting,
+    }
+}
 
 pub async fn list_tasks(
     State(state): State<AppState>,
     Extension(user_id): Extension<UserId>,
     Query(filter): Query<TaskFilterQuery>,
 ) -> Result<Json<Vec<TaskInfo>>, AppError> {
-    let user_id = user_id.0;
+    let mut mgr = make_mgr(&state, user_id.0)?;
 
-    let order = match filter.sort_by.as_deref() {
-        Some("modified") => "modified_at DESC",
-        Some("project") => "project ASC NULLS LAST",
-        _ => "urgency DESC NULLS LAST",
+    let sort_field = match filter.sort_by.as_deref() {
+        Some("modified") => taskgeneral_core::models::SortField::Modified,
+        Some("project") => taskgeneral_core::models::SortField::Description,
+        _ => taskgeneral_core::models::SortField::Urgency,
     };
 
-    let rows = match (&filter.status, &filter.project, &filter.tag) {
-        (None, None, None) => state
-            .db
-            .query(
-                &format!("SELECT {SELECT_COLS} FROM tasks WHERE user_id = $1 ORDER BY {order}"),
-                &[&user_id],
-            )
-            .await
-            .map_err(|e| AppError::Database(e.to_string()))?,
-        (Some(s), None, None) => state
-            .db
-            .query(
-                &format!("SELECT {SELECT_COLS} FROM tasks WHERE user_id = $1 AND status = $2 ORDER BY {order}"),
-                &[&user_id, s],
-            )
-            .await
-            .map_err(|e| AppError::Database(e.to_string()))?,
-        (None, Some(p), None) => state
-            .db
-            .query(
-                &format!("SELECT {SELECT_COLS} FROM tasks WHERE user_id = $1 AND project = $2 ORDER BY {order}"),
-                &[&user_id, p],
-            )
-            .await
-            .map_err(|e| AppError::Database(e.to_string()))?,
-        (None, None, Some(t)) => state
-            .db
-            .query(
-                &format!("SELECT {SELECT_COLS} FROM tasks WHERE user_id = $1 AND $2 = ANY(tags) ORDER BY {order}"),
-                &[&user_id, t],
-            )
-            .await
-            .map_err(|e| AppError::Database(e.to_string()))?,
-        (Some(s), Some(p), None) => state
-            .db
-            .query(
-                &format!("SELECT {SELECT_COLS} FROM tasks WHERE user_id = $1 AND status = $2 AND project = $3 ORDER BY {order}"),
-                &[&user_id, s, p],
-            )
-            .await
-            .map_err(|e| AppError::Database(e.to_string()))?,
-        (Some(s), None, Some(t)) => state
-            .db
-            .query(
-                &format!("SELECT {SELECT_COLS} FROM tasks WHERE user_id = $1 AND status = $2 AND $3 = ANY(tags) ORDER BY {order}"),
-                &[&user_id, s, t],
-            )
-            .await
-            .map_err(|e| AppError::Database(e.to_string()))?,
-        (None, Some(p), Some(t)) => state
-            .db
-            .query(
-                &format!("SELECT {SELECT_COLS} FROM tasks WHERE user_id = $1 AND project = $2 AND $3 = ANY(tags) ORDER BY {order}"),
-                &[&user_id, p, t],
-            )
-            .await
-            .map_err(|e| AppError::Database(e.to_string()))?,
-        (Some(s), Some(p), Some(t)) => state
-            .db
-            .query(
-                &format!("SELECT {SELECT_COLS} FROM tasks WHERE user_id = $1 AND status = $2 AND project = $3 AND $4 = ANY(tags) ORDER BY {order}"),
-                &[&user_id, s, p, t],
-            )
-            .await
-            .map_err(|e| AppError::Database(e.to_string()))?,
+    let tf = TaskFilter {
+        status: filter.status,
+        project: filter.project,
+        tag: filter.tag,
+        sort_by: None,
     };
 
-    let tasks: Vec<TaskInfo> = rows.iter().map(row_to_task_info).collect();
-    Ok(Json(tasks))
+    let tasks = tokio::task::spawn_blocking(move || mgr.list_tasks_sorted(tf, sort_field))
+        .await
+        .map_err(|e| AppError::Internal(e.to_string()))?
+        .map_err(AppError::from)?;
+
+    Ok(Json(tasks.into_iter().map(core_task_to_api).collect()))
 }
 
 pub async fn create_task(
@@ -138,47 +82,14 @@ pub async fn create_task(
     Extension(user_id): Extension<UserId>,
     Json(req): Json<CreateTaskRequest>,
 ) -> Result<Json<TaskInfo>, AppError> {
-    let user_id = user_id.0;
-    let uuid = Uuid::new_v4();
-    let now = chrono::Utc::now();
-    let empty_tags: Vec<String> = vec![];
+    let mut mgr = make_mgr(&state, user_id.0)?;
 
-    state
-        .db
-        .execute(
-            "INSERT INTO tasks (uuid, user_id, description, status, tags, urgency, is_active, is_waiting, entry, modified_at, created_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $9, $9)",
-            &[
-                &uuid,
-                &user_id,
-                &req.description,
-                &"pending",
-                &empty_tags,
-                &0.0_f64,
-                &false,
-                &false,
-                &now,
-            ],
-        )
+    let task = tokio::task::spawn_blocking(move || mgr.create_task(&req.description))
         .await
-        .map_err(|e| AppError::Database(e.to_string()))?;
+        .map_err(|e| AppError::Internal(e.to_string()))?
+        .map_err(AppError::from)?;
 
-    Ok(Json(TaskInfo {
-        uuid: uuid.to_string(),
-        description: req.description,
-        status: "pending".to_string(),
-        project: None,
-        tags: vec![],
-        priority: None,
-        entry: Some(now.to_rfc3339()),
-        modified: Some(now.to_rfc3339()),
-        due: None,
-        wait: None,
-        start: None,
-        recur: None,
-        urgency: 0.0,
-        is_active: false,
-        is_waiting: false,
-    }))
+    Ok(Json(core_task_to_api(task)))
 }
 
 pub async fn get_task(
@@ -186,27 +97,16 @@ pub async fn get_task(
     Extension(user_id): Extension<UserId>,
     Path(uuid): Path<Uuid>,
 ) -> Result<Json<TaskInfo>, AppError> {
-    let user_id = user_id.0;
-    let row = state
-        .db
-        .query_one(
-            &format!("SELECT {SELECT_COLS} FROM tasks WHERE uuid = $1 AND user_id = $2"),
-            &[&uuid, &user_id],
-        )
+    let mut mgr = make_mgr(&state, user_id.0)?;
+    let uuid_str = uuid.to_string();
+
+    let task = tokio::task::spawn_blocking(move || mgr.get_task(&uuid_str))
         .await
-        .map_err(|e| AppError::Database(e.to_string()))?;
+        .map_err(|e| AppError::Internal(e.to_string()))?
+        .map_err(AppError::from)?
+        .ok_or_else(|| AppError::NotFound(format!("Task {} not found", uuid)))?;
 
-    Ok(Json(row_to_task_info(&row)))
-}
-
-fn parse_timestamp(s: &Option<String>) -> Result<Option<chrono::DateTime<chrono::Utc>>, AppError> {
-    match s {
-        None => Ok(None),
-        Some(v) if v.is_empty() => Ok(None),
-        Some(v) => chrono::DateTime::parse_from_rfc3339(v)
-            .map(|dt| Some(dt.with_timezone(&chrono::Utc)))
-            .map_err(|e| AppError::BadRequest(format!("invalid date '{v}': {e}"))),
-    }
+    Ok(Json(core_task_to_api(task)))
 }
 
 pub async fn update_task(
@@ -215,42 +115,25 @@ pub async fn update_task(
     Path(uuid): Path<Uuid>,
     Json(req): Json<UpdateTaskRequest>,
 ) -> Result<Json<TaskInfo>, AppError> {
-    let user_id = user_id.0;
-    let now = chrono::Utc::now();
-    let due = parse_timestamp(&req.due)?;
-    let wait = parse_timestamp(&req.wait)?;
+    let mut mgr = make_mgr(&state, user_id.0)?;
+    let uuid_str = uuid.to_string();
 
-    let row = state
-        .db
-        .query_one(
-            &format!(
-                "UPDATE tasks SET \
-                description = COALESCE($1, description), \
-                project = COALESCE($2, project), \
-                tags = COALESCE($3, tags), \
-                priority = COALESCE($4, priority), \
-                due = $5, wait = $6, recur = $7, \
-                modified_at = $8 \
-                WHERE uuid = $9 AND user_id = $10 \
-                RETURNING {SELECT_COLS}"
-            ),
-            &[
-                &req.description,
-                &req.project,
-                &req.tags,
-                &req.priority,
-                &due,
-                &wait,
-                &req.recur,
-                &now,
-                &uuid,
-                &user_id,
-            ],
-        )
+    let updates = TaskUpdate {
+        description: req.description,
+        project: req.project,
+        tags: req.tags,
+        priority: req.priority,
+        due: req.due,
+        wait: req.wait,
+        recur: req.recur,
+    };
+
+    let task = tokio::task::spawn_blocking(move || mgr.update_task(&uuid_str, updates))
         .await
-        .map_err(|e| AppError::Database(e.to_string()))?;
+        .map_err(|e| AppError::Internal(e.to_string()))?
+        .map_err(AppError::from)?;
 
-    Ok(Json(row_to_task_info(&row)))
+    Ok(Json(core_task_to_api(task)))
 }
 
 pub async fn delete_task(
@@ -258,15 +141,14 @@ pub async fn delete_task(
     Extension(user_id): Extension<UserId>,
     Path(uuid): Path<Uuid>,
 ) -> Result<StatusCode, AppError> {
-    let user_id = user_id.0;
-    state
-        .db
-        .execute(
-            "DELETE FROM tasks WHERE uuid = $1 AND user_id = $2",
-            &[&uuid, &user_id],
-        )
+    let mut mgr = make_mgr(&state, user_id.0)?;
+    let uuid_str = uuid.to_string();
+
+    tokio::task::spawn_blocking(move || mgr.delete_task(&uuid_str))
         .await
-        .map_err(|e| AppError::Database(e.to_string()))?;
+        .map_err(|e| AppError::Internal(e.to_string()))?
+        .map_err(AppError::from)?;
+
     Ok(StatusCode::NO_CONTENT)
 }
 
@@ -275,21 +157,15 @@ pub async fn complete_task(
     Extension(user_id): Extension<UserId>,
     Path(uuid): Path<Uuid>,
 ) -> Result<Json<TaskInfo>, AppError> {
-    let user_id = user_id.0;
-    let now = chrono::Utc::now();
-    let row = state
-        .db
-        .query_one(
-            &format!(
-                "UPDATE tasks SET status = 'completed', modified_at = $1, is_active = false \
-                WHERE uuid = $2 AND user_id = $3 RETURNING {SELECT_COLS}"
-            ),
-            &[&now, &uuid, &user_id],
-        )
-        .await
-        .map_err(|e| AppError::Database(e.to_string()))?;
+    let mut mgr = make_mgr(&state, user_id.0)?;
+    let uuid_str = uuid.to_string();
 
-    Ok(Json(row_to_task_info(&row)))
+    let task = tokio::task::spawn_blocking(move || mgr.complete_task(&uuid_str))
+        .await
+        .map_err(|e| AppError::Internal(e.to_string()))?
+        .map_err(AppError::from)?;
+
+    Ok(Json(core_task_to_api(task)))
 }
 
 pub async fn uncomplete_task(
@@ -297,21 +173,15 @@ pub async fn uncomplete_task(
     Extension(user_id): Extension<UserId>,
     Path(uuid): Path<Uuid>,
 ) -> Result<Json<TaskInfo>, AppError> {
-    let user_id = user_id.0;
-    let now = chrono::Utc::now();
-    let row = state
-        .db
-        .query_one(
-            &format!(
-                "UPDATE tasks SET status = 'pending', modified_at = $1 \
-                WHERE uuid = $2 AND user_id = $3 RETURNING {SELECT_COLS}"
-            ),
-            &[&now, &uuid, &user_id],
-        )
-        .await
-        .map_err(|e| AppError::Database(e.to_string()))?;
+    let mut mgr = make_mgr(&state, user_id.0)?;
+    let uuid_str = uuid.to_string();
 
-    Ok(Json(row_to_task_info(&row)))
+    let task = tokio::task::spawn_blocking(move || mgr.uncomplete_task(&uuid_str))
+        .await
+        .map_err(|e| AppError::Internal(e.to_string()))?
+        .map_err(AppError::from)?;
+
+    Ok(Json(core_task_to_api(task)))
 }
 
 pub async fn start_task(
@@ -319,21 +189,15 @@ pub async fn start_task(
     Extension(user_id): Extension<UserId>,
     Path(uuid): Path<Uuid>,
 ) -> Result<Json<TaskInfo>, AppError> {
-    let user_id = user_id.0;
-    let now = chrono::Utc::now();
-    let row = state
-        .db
-        .query_one(
-            &format!(
-                "UPDATE tasks SET is_active = true, start = $1, modified_at = $1 \
-                WHERE uuid = $2 AND user_id = $3 RETURNING {SELECT_COLS}"
-            ),
-            &[&now, &uuid, &user_id],
-        )
-        .await
-        .map_err(|e| AppError::Database(e.to_string()))?;
+    let mut mgr = make_mgr(&state, user_id.0)?;
+    let uuid_str = uuid.to_string();
 
-    Ok(Json(row_to_task_info(&row)))
+    let task = tokio::task::spawn_blocking(move || mgr.start_task(&uuid_str))
+        .await
+        .map_err(|e| AppError::Internal(e.to_string()))?
+        .map_err(AppError::from)?;
+
+    Ok(Json(core_task_to_api(task)))
 }
 
 pub async fn stop_task(
@@ -341,21 +205,15 @@ pub async fn stop_task(
     Extension(user_id): Extension<UserId>,
     Path(uuid): Path<Uuid>,
 ) -> Result<Json<TaskInfo>, AppError> {
-    let user_id = user_id.0;
-    let now = chrono::Utc::now();
-    let row = state
-        .db
-        .query_one(
-            &format!(
-                "UPDATE tasks SET is_active = false, modified_at = $1 \
-                WHERE uuid = $2 AND user_id = $3 RETURNING {SELECT_COLS}"
-            ),
-            &[&now, &uuid, &user_id],
-        )
-        .await
-        .map_err(|e| AppError::Database(e.to_string()))?;
+    let mut mgr = make_mgr(&state, user_id.0)?;
+    let uuid_str = uuid.to_string();
 
-    Ok(Json(row_to_task_info(&row)))
+    let task = tokio::task::spawn_blocking(move || mgr.stop_task(&uuid_str))
+        .await
+        .map_err(|e| AppError::Internal(e.to_string()))?
+        .map_err(AppError::from)?;
+
+    Ok(Json(core_task_to_api(task)))
 }
 
 pub async fn configure_sync(
@@ -363,25 +221,15 @@ pub async fn configure_sync(
     Extension(user_id): Extension<UserId>,
     Json(req): Json<ConfigureSyncRequest>,
 ) -> Result<Json<serde_json::Value>, AppError> {
-    let user_id = user_id.0;
-    state
-        .db
-        .execute(
-            "INSERT INTO sync_config (user_id, server_url, client_id, encryption_secret_encrypted)
-             VALUES ($1, $2, $3, $4)
-             ON CONFLICT (user_id) DO UPDATE SET
-                server_url = EXCLUDED.server_url,
-                client_id = EXCLUDED.client_id,
-                encryption_secret_encrypted = EXCLUDED.encryption_secret_encrypted",
-            &[
-                &user_id,
-                &req.server_url,
-                &req.client_id,
-                &req.encryption_secret,
-            ],
-        )
-        .await
-        .map_err(|e| AppError::Database(e.to_string()))?;
+    let mut mgr = make_mgr(&state, user_id.0)?;
+
+    tokio::task::spawn_blocking(move || {
+        mgr.configure_sync(&req.server_url, &req.encryption_secret, &req.client_id)
+    })
+    .await
+    .map_err(|e| AppError::Internal(e.to_string()))?
+    .map_err(AppError::from)?;
+
     Ok(Json(json!({ "status": "ok" })))
 }
 
@@ -389,43 +237,48 @@ pub async fn get_sync_config(
     State(state): State<AppState>,
     Extension(user_id): Extension<UserId>,
 ) -> Result<Json<serde_json::Value>, AppError> {
-    let user_id = user_id.0;
-    let rows = state
-        .db
-        .query(
-            "SELECT server_url, client_id FROM sync_config WHERE user_id = $1",
-            &[&user_id],
-        )
-        .await
-        .map_err(|e| AppError::Database(e.to_string()))?;
+    let mut mgr = make_mgr(&state, user_id.0)?;
 
-    if rows.is_empty() {
-        return Ok(Json(json!({ "configured": false, "server_url": null, "client_id": null })));
+    let result = tokio::task::spawn_blocking(move || mgr.get_sync_config())
+        .await
+        .map_err(|e| AppError::Internal(e.to_string()))?
+        .map_err(AppError::from)?;
+
+    match result {
+        None => Ok(Json(json!({ "configured": false, "server_url": null, "client_id": null }))),
+        Some((server_url, client_id)) => Ok(Json(json!({
+            "configured": server_url.is_some(),
+            "server_url": server_url,
+            "client_id": client_id,
+        }))),
     }
-    let row = rows.first().unwrap();
-    let server_url: Option<String> = row.get(0);
-    let client_id: Option<String> = row.get(1);
-    Ok(Json(json!({
-        "configured": server_url.is_some(),
-        "server_url": server_url,
-        "client_id": client_id,
-    })))
 }
 
-pub async fn sync_now(State(_state): State<AppState>, Extension(_user_id): Extension<UserId>) -> Result<Json<serde_json::Value>, AppError> {
-    Ok(Json(json!({ "success": false, "message": "Sync not yet implemented." })))
+pub async fn sync_now(
+    State(state): State<AppState>,
+    Extension(user_id): Extension<UserId>,
+) -> Result<Json<serde_json::Value>, AppError> {
+    let mut mgr = make_mgr(&state, user_id.0)?;
+
+    let result = tokio::task::spawn_blocking(move || mgr.sync())
+        .await
+        .map_err(|e| AppError::Internal(e.to_string()))?
+        .map_err(AppError::from)?;
+
+    Ok(Json(json!({ "success": result.success, "message": result.message })))
 }
 
 pub async fn clear_data(
     State(state): State<AppState>,
     Extension(user_id): Extension<UserId>,
 ) -> Result<StatusCode, AppError> {
-    let user_id = user_id.0;
-    state
-        .db
-        .execute("DELETE FROM tasks WHERE user_id = $1", &[&user_id])
+    let mut mgr = make_mgr(&state, user_id.0)?;
+
+    tokio::task::spawn_blocking(move || mgr.clear_local_data())
         .await
-        .map_err(|e| AppError::Database(e.to_string()))?;
+        .map_err(|e| AppError::Internal(e.to_string()))?
+        .map_err(AppError::from)?;
+
     Ok(StatusCode::NO_CONTENT)
 }
 
@@ -433,23 +286,13 @@ pub async fn get_working_set(
     State(state): State<AppState>,
     Extension(user_id): Extension<UserId>,
 ) -> Result<Json<WorkingSetResponse>, AppError> {
-    let user_id = user_id.0;
-    let rows = state
-        .db
-        .query(
-            "SELECT task_uuid FROM working_set WHERE user_id = $1 ORDER BY position",
-            &[&user_id],
-        )
+    let mut mgr = make_mgr(&state, user_id.0)?;
+
+    let items = tokio::task::spawn_blocking(move || mgr.get_working_set())
         .await
-        .map_err(|e| AppError::Database(e.to_string()))?;
+        .map_err(|e| AppError::Internal(e.to_string()))?
+        .map_err(AppError::from)?;
 
-    let tasks: Vec<String> = rows
-        .into_iter()
-        .map(|row| {
-            let uuid: Uuid = row.get(0);
-            uuid.to_string()
-        })
-        .collect();
-
+    let tasks: Vec<String> = items.into_iter().map(|item| item.task.uuid).collect();
     Ok(Json(WorkingSetResponse { tasks }))
 }

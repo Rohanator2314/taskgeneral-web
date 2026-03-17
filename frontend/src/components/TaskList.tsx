@@ -46,10 +46,22 @@ const formatDue = (dateStr?: string): string => {
 
 interface TaskListProps {
   filter?: TaskFilterParams;
+  calculateUrgency?: (task: TaskInfo) => number;
 }
 
-export default function TaskList({ filter, onSync }: TaskListProps) {
-  const { data: tasks, isLoading, isError, refetch } = useTaskList(filter);
+export default function TaskList({ filter, onSync, calculateUrgency }: TaskListProps) {
+  const { data: rawTasks, isLoading, isError, refetch } = useTaskList(filter);
+
+  const tasks = rawTasks ? (() => {
+    if (filter?.sort_by === 'urgency' && calculateUrgency) {
+      return [...rawTasks].sort((a, b) => {
+        const urgencyA = calculateUrgency(a);
+        const urgencyB = calculateUrgency(b);
+        return urgencyB - urgencyA;
+      });
+    }
+    return rawTasks;
+  })() : undefined;
   const [selectedRow, setSelectedRow] = useState<number | null>(null);
   const [formMode, setFormMode] = useState<'create' | 'edit' | null>(null);
   const [statusMsg, setStatusMsg] = useState<string | null>(null);

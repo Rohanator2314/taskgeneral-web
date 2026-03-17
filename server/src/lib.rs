@@ -7,7 +7,7 @@ use axum::{
 use native_tls::TlsConnector;
 use postgres_native_tls::MakeTlsConnector;
 use std::sync::Arc;
-use tokio_postgres::Config;
+use taskgeneral_core::storage::pg::PostgresTaskManager;
 use uuid::Uuid;
 
 pub mod auth;
@@ -27,48 +27,20 @@ use state::AppState;
 #[derive(Clone)]
 pub struct UserId(pub Uuid);
 
-fn parse_pg_url(url: &str) -> Config {
-    let mut config = Config::new();
-
-    let url_part = url
-        .strip_prefix("postgres://")
-        .or_else(|| url.strip_prefix("postgresql://"))
-        .unwrap_or(url);
-
-    let (user_info, host_part) = if let Some(at) = url_part.find('@') {
-        (&url_part[..at], &url_part[at + 1..])
-    } else {
-        ("", url_part)
-    };
-
-    if let Some((user, pass)) = user_info.split_once(':') {
-        config.user(user);
-        config.password(pass);
-    }
-
-    let (host_port_and_query, db_part) =
-        host_part.split_once('/').unwrap_or((host_part, "postgres"));
-    let (host_port, _query) = host_port_and_query
-        .split_once('?')
-        .unwrap_or((host_port_and_query, ""));
-    let (db_name, _) = db_part.split_once('?').unwrap_or((db_part, ""));
-    config.dbname(db_name);
-
-    if let Some((host, port)) = host_port.rsplit_once(':') {
-        config.host(host);
-        config.port(port.parse().unwrap_or(5432));
-    } else {
-        config.host(host_port);
-        config.port(5432);
-    }
-
-    config
-}
-
 pub async fn create_app() -> Router {
     let app_config = config::Config::from_env().expect("Failed to load config");
 
-    let pg_config = parse_pg_url(&app_config.database_url);
+    let rt = Arc::new(
+        tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .expect("Failed to build Postgres runtime"),
+    );
+
+    let pg_config: tokio_postgres::Config = app_config
+        .database_url
+        .parse()
+        .expect("Failed to parse DATABASE_URL");
     let tls_connector = TlsConnector::builder()
         .build()
         .expect("Failed to build TLS connector");
@@ -85,12 +57,25 @@ pub async fn create_app() -> Router {
         }
     });
 
+    let client = Arc::new(client);
+
+    let init_mgr = PostgresTaskManager::new_arc(
+        client.clone(),
+        &Uuid::nil().to_string(),
+        rt.clone(),
+    )
+    .expect("Failed to create init manager");
+    init_mgr.init_schema().await
+        .expect("Failed to initialise schema");
+
     let mut auth = Auth::from_env();
     auth.load_jwks()
         .await
         .expect("Failed to load Supabase JWKS");
+
     let state = AppState {
-        db: Arc::new(client),
+        client,
+        rt,
         auth,
     };
 

@@ -5,17 +5,18 @@ import { useAuth } from '../auth/AuthContext'
 import { useSyncConfigStatus, useSync } from '../api/hooks'
 import TaskList from './TaskList'
 import SettingsPage from './SettingsPage'
+import UrgencyWeightsPage from './UrgencyWeightsPage'
 import FilterBar from './FilterBar'
 import type { TaskFilterParams } from '../api/types'
 
-type View = 'tasks' | 'settings'
+type View = 'tasks' | 'settings' | 'urgency-weights'
 
 export default function Layout() {
   const { theme, toggleTheme } = useTheme()
   const { signOut } = useAuth()
   const isDark = theme === 'dark'
   const [view, setView] = useState<View>('tasks')
-  const { prefs, updatePreferences, getDefaultFilter } = usePreferences()
+  const { prefs, updatePreferences, getDefaultFilter, calculateUrgency, resetUrgencyWeights } = usePreferences()
   const { data: syncStatus } = useSyncConfigStatus()
   const syncMutation = useSync()
   const [isSyncing, setIsSyncing] = useState(false)
@@ -118,17 +119,25 @@ export default function Layout() {
         </header>
 
         <main className="flex-1 relative overflow-hidden flex flex-col">
-          {view === 'settings' ? (
+          {view === 'urgency-weights' ? (
+            <UrgencyWeightsPage
+              weights={prefs.urgencyWeights}
+              onSave={(weights) => updatePreferences({ urgencyWeights: weights })}
+              onReset={resetUrgencyWeights}
+              onBack={() => setView('settings')}
+            />
+          ) : view === 'settings' ? (
             <SettingsPage 
               onBack={() => setView('tasks')} 
               prefs={prefs}
               updatePreferences={updatePreferences}
               onResetToDefaults={handleResetToDefaults}
+              onOpenUrgencyWeights={() => setView('urgency-weights')}
             />
           ) : (
             <>
               <FilterBar filter={filter} onFilterChange={handleFilterChange} />
-              <TaskList filter={filter} onSync={handleSync} />
+              <TaskList filter={filter} onSync={handleSync} calculateUrgency={calculateUrgency} />
             </>
           )}
         </main>

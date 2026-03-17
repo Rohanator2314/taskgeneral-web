@@ -12,10 +12,11 @@ const defaultPrefs = {
 
 const mockUpdatePrefs = vi.fn()
 const mockResetToDefaults = vi.fn()
+const mockOpenUrgencyWeights = vi.fn()
 
 describe('SettingsPage', () => {
   it('renders all section headings', () => {
-    render(<SettingsPage onBack={vi.fn()} prefs={defaultPrefs} updatePreferences={mockUpdatePrefs} onResetToDefaults={mockResetToDefaults} />)
+    render(<SettingsPage onBack={vi.fn()} prefs={defaultPrefs} updatePreferences={mockUpdatePrefs} onResetToDefaults={mockResetToDefaults} onOpenUrgencyWeights={mockOpenUrgencyWeights} />)
 
     expect(screen.getByText(/\[ Sync \]/i)).toBeInTheDocument()
     expect(screen.getByText(/\[ Appearance \]/i)).toBeInTheDocument()
@@ -24,7 +25,7 @@ describe('SettingsPage', () => {
 
   it('calls onBack when back button clicked', () => {
     const onBack = vi.fn()
-    render(<SettingsPage onBack={onBack} prefs={defaultPrefs} updatePreferences={mockUpdatePrefs} onResetToDefaults={mockResetToDefaults} />)
+    render(<SettingsPage onBack={onBack} prefs={defaultPrefs} updatePreferences={mockUpdatePrefs} onResetToDefaults={mockResetToDefaults} onOpenUrgencyWeights={mockOpenUrgencyWeights} />)
 
     fireEvent.click(screen.getByText(/← Back to Tasks/i))
 
@@ -32,7 +33,7 @@ describe('SettingsPage', () => {
   })
 
   it('shows About section with version from API', async () => {
-    render(<SettingsPage onBack={vi.fn()} prefs={defaultPrefs} updatePreferences={mockUpdatePrefs} onResetToDefaults={mockResetToDefaults} />)
+    render(<SettingsPage onBack={vi.fn()} prefs={defaultPrefs} updatePreferences={mockUpdatePrefs} onResetToDefaults={mockResetToDefaults} onOpenUrgencyWeights={mockOpenUrgencyWeights} />)
 
     await waitFor(() => {
       expect(screen.getByText(/\[ About \]/i)).toBeInTheDocument()
@@ -41,7 +42,7 @@ describe('SettingsPage', () => {
   })
 
   it('shows confirmation step when Clear All Data is clicked once', async () => {
-    render(<SettingsPage onBack={vi.fn()} prefs={defaultPrefs} updatePreferences={mockUpdatePrefs} onResetToDefaults={mockResetToDefaults} />)
+    render(<SettingsPage onBack={vi.fn()} prefs={defaultPrefs} updatePreferences={mockUpdatePrefs} onResetToDefaults={mockResetToDefaults} onOpenUrgencyWeights={mockOpenUrgencyWeights} />)
 
     fireEvent.click(screen.getByTestId('clear-data-btn'))
 
@@ -52,7 +53,7 @@ describe('SettingsPage', () => {
   })
 
   it('cancels clear confirmation when Cancel is clicked', async () => {
-    render(<SettingsPage onBack={vi.fn()} prefs={defaultPrefs} updatePreferences={mockUpdatePrefs} onResetToDefaults={mockResetToDefaults} />)
+    render(<SettingsPage onBack={vi.fn()} prefs={defaultPrefs} updatePreferences={mockUpdatePrefs} onResetToDefaults={mockResetToDefaults} onOpenUrgencyWeights={mockOpenUrgencyWeights} />)
 
     fireEvent.click(screen.getByTestId('clear-data-btn'))
     expect(screen.getByText(/Are you sure\?/i)).toBeInTheDocument()
@@ -64,7 +65,7 @@ describe('SettingsPage', () => {
   })
 
   it('shows success status after confirming clear data', async () => {
-    render(<SettingsPage onBack={vi.fn()} prefs={defaultPrefs} updatePreferences={mockUpdatePrefs} onResetToDefaults={mockResetToDefaults} />)
+    render(<SettingsPage onBack={vi.fn()} prefs={defaultPrefs} updatePreferences={mockUpdatePrefs} onResetToDefaults={mockResetToDefaults} onOpenUrgencyWeights={mockOpenUrgencyWeights} />)
 
     fireEvent.click(screen.getByTestId('clear-data-btn'))
     fireEvent.click(screen.getByText('Yes, delete all'))
@@ -76,7 +77,7 @@ describe('SettingsPage', () => {
   })
 
   it('shows success status after saving sync config', async () => {
-    render(<SettingsPage onBack={vi.fn()} prefs={defaultPrefs} updatePreferences={mockUpdatePrefs} onResetToDefaults={mockResetToDefaults} />)
+    render(<SettingsPage onBack={vi.fn()} prefs={defaultPrefs} updatePreferences={mockUpdatePrefs} onResetToDefaults={mockResetToDefaults} onOpenUrgencyWeights={mockOpenUrgencyWeights} />)
 
     fireEvent.change(screen.getByPlaceholderText('https://sync.example.com'), {
       target: { value: 'https://sync.test.com' },
@@ -99,7 +100,7 @@ describe('SettingsPage', () => {
       )
     )
 
-    render(<SettingsPage onBack={vi.fn()} prefs={defaultPrefs} updatePreferences={mockUpdatePrefs} onResetToDefaults={mockResetToDefaults} />)
+    render(<SettingsPage onBack={vi.fn()} prefs={defaultPrefs} updatePreferences={mockUpdatePrefs} onResetToDefaults={mockResetToDefaults} onOpenUrgencyWeights={mockOpenUrgencyWeights} />)
 
     fireEvent.click(screen.getByRole('button', { name: /^Save$/i }))
 
@@ -110,7 +111,7 @@ describe('SettingsPage', () => {
   })
 
   it('shows error status when Sync Now fails (409)', async () => {
-    render(<SettingsPage onBack={vi.fn()} prefs={defaultPrefs} updatePreferences={mockUpdatePrefs} onResetToDefaults={mockResetToDefaults} />)
+    render(<SettingsPage onBack={vi.fn()} prefs={defaultPrefs} updatePreferences={mockUpdatePrefs} onResetToDefaults={mockResetToDefaults} onOpenUrgencyWeights={mockOpenUrgencyWeights} />)
 
     fireEvent.click(screen.getByRole('button', { name: /Sync Now/i }))
 
@@ -121,7 +122,7 @@ describe('SettingsPage', () => {
   })
 
   it('clears status banner when a new action starts', async () => {
-    render(<SettingsPage onBack={vi.fn()} prefs={defaultPrefs} updatePreferences={mockUpdatePrefs} onResetToDefaults={mockResetToDefaults} />)
+    render(<SettingsPage onBack={vi.fn()} prefs={defaultPrefs} updatePreferences={mockUpdatePrefs} onResetToDefaults={mockResetToDefaults} onOpenUrgencyWeights={mockOpenUrgencyWeights} />)
 
     fireEvent.click(screen.getByRole('button', { name: /Sync Now/i }))
     await waitFor(() => {
@@ -135,7 +136,7 @@ describe('SettingsPage', () => {
   })
 
   it('theme toggle button reflects current theme', () => {
-    render(<SettingsPage onBack={vi.fn()} prefs={defaultPrefs} updatePreferences={mockUpdatePrefs} onResetToDefaults={mockResetToDefaults} />)
+    render(<SettingsPage onBack={vi.fn()} prefs={defaultPrefs} updatePreferences={mockUpdatePrefs} onResetToDefaults={mockResetToDefaults} onOpenUrgencyWeights={mockOpenUrgencyWeights} />)
     const themeBtn = screen.getByRole('button', { name: /Light|Dark/ })
     expect(themeBtn).toBeInTheDocument()
   })
