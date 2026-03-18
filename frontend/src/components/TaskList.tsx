@@ -224,9 +224,12 @@ export default function TaskList({ filter, onSync, calculateUrgency }: TaskListP
               const isSelected = selectedRow === index;
               const isEditing = isSelected && formMode === 'edit';
               const rowId = index + 1;
-              const urgency = task.urgency.toFixed(1);
+              const urgency = calculateUrgency ? calculateUrgency(task).toFixed(1) : task.urgency.toFixed(1);
               const isCompleted = task.status === 'completed';
               const isPendingDelete = pendingDelete === task.uuid;
+              const displayTags = task.wait
+                ? [...(task.tags || []), `wait:${task.wait.slice(0, 10)}`]
+                : task.tags || [];
 
               if (isEditing) {
                 return (
@@ -354,8 +357,8 @@ export default function TaskList({ filter, onSync, calculateUrgency }: TaskListP
                   <td className="p-2 truncate max-w-[8rem]" title={task.project}>
                     {task.project || ''}
                   </td>
-                  <td className="p-2 truncate max-w-[12rem]" title={task.tags?.join(', ')}>
-                    {task.tags?.map((t) => `+${t}`).join(' ')}
+                  <td className="p-2 truncate max-w-[12rem]" title={displayTags.join(', ')}>
+                    {displayTags.map((t) => `+${t}`).join(' ')}
                   </td>
                   <td className="p-2 text-center">{task.priority?.[0]?.toUpperCase() || ''}</td>
                   <td className={`p-2 ${isDueOrOverdue(task.due) ? 'text-red-500 font-bold' : 'opacity-80'}`}>{formatDue(task.due)}</td>
