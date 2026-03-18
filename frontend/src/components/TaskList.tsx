@@ -227,9 +227,11 @@ export default function TaskList({ filter, onSync, calculateUrgency }: TaskListP
               const urgency = calculateUrgency ? calculateUrgency(task).toFixed(1) : task.urgency.toFixed(1);
               const isCompleted = task.status === 'completed';
               const isPendingDelete = pendingDelete === task.uuid;
-              const displayTags = task.wait
-                ? [...(task.tags || []), `wait:${task.wait.slice(0, 10)}`]
-                : task.tags || [];
+              const displayTags = [
+                ...(task.tags || []),
+                ...(task.wait ? [`wait:${task.wait.slice(0, 10)}`] : []),
+                ...(task.recur ? [`recur:${task.recur}`] : []),
+              ];
 
               if (isEditing) {
                 return (

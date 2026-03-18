@@ -8,16 +8,43 @@ interface TaskFormProps {
   onClose: () => void;
 }
 
+function parseSpecialTags(tags: string[]): { regularTags: string[]; wait: string; recur: string } {
+  const regularTags: string[] = [];
+  let wait = '';
+  let recur = '';
+  
+  for (const tag of tags) {
+    if (tag.startsWith('wait:')) {
+      wait = tag.slice(5);
+    } else if (tag.startsWith('recur:')) {
+      recur = tag.slice(6);
+    } else {
+      regularTags.push(tag);
+    }
+  }
+  
+  return { regularTags, wait, recur };
+}
+
 export default function TaskForm({ mode, task, onClose }: TaskFormProps) {
   const [description, setDescription] = useState(task?.description || '');
   const [project, setProject] = useState(task?.project || '');
   const [priority, setPriority] = useState(task?.priority || '');
   const [due, setDue] = useState(task?.due ? task.due.slice(0, 10) : '');
-  const [tags, setTags] = useState(task?.tags?.join(' ') || '');
+  const [tags, setTags] = useState('');
   const [statusMsg, setStatusMsg] = useState<string | null>(null);
 
   const createTask = useCreateTask();
   const updateTask = useUpdateTask();
+
+  useEffect(() => {
+    if (task) {
+      const waitFromNative = task.wait ? task.wait.slice(0, 10) : '';
+      const recurFromNative = task.recur || '';
+      const { regularTags } = parseSpecialTags(task.tags || []);
+      setTags([...regularTags, ...(waitFromNative ? [`wait:${waitFromNative}`] : []), ...(recurFromNative ? [`recur:${recurFromNative}`] : [])].join(' '));
+    }
+  }, [task]);
 
   useEffect(() => {
     if (statusMsg) {
@@ -49,10 +76,28 @@ export default function TaskForm({ mode, task, onClose }: TaskFormProps) {
       const existingDueDateOnly = task.due ? task.due.slice(0, 10) : '';
       if (due !== existingDueDateOnly) updates.due = due ? `${due}T00:00:00Z` : '';
       
+      const currentWaitNative = task.wait ? task.wait.slice(0, 10) : '';
+      const currentRecurNative = task.recur || '';
       const currentTags = task.tags || [];
+      const { regularTags: currentRegularTags, wait: currentWaitTag, recur: currentRecurTag } = parseSpecialTags(currentTags);
+      
       const newTags = tags.split(' ').filter(t => t.trim());
-      if (JSON.stringify(currentTags) !== JSON.stringify(newTags)) {
-        updates.tags = newTags;
+      const { regularTags: newRegularTags, wait: newWaitTag, recur: newRecurTag } = parseSpecialTags(newTags);
+      
+      const waitToSet = newWaitTag || currentWaitNative;
+      const waitChanged = waitToSet !== currentWaitNative && waitToSet !== currentWaitTag;
+      if (waitChanged) {
+        updates.wait = waitToSet ? `${waitToSet}T00:00:00Z` : '';
+      }
+      
+      const recurToSet = newRecurTag || currentRecurNative;
+      const recurChanged = recurToSet !== currentRecurNative && recurToSet !== currentRecurTag;
+      if (recurChanged) {
+        updates.recur = recurToSet || '';
+      }
+      
+      if (JSON.stringify(currentRegularTags) !== JSON.stringify(newRegularTags)) {
+        updates.tags = newRegularTags;
       }
 
       if (Object.keys(updates).length === 0) {
@@ -123,7 +168,7 @@ export default function TaskForm({ mode, task, onClose }: TaskFormProps) {
             <input
               type="text"
               className={`${inputClass} w-48 shrink-0`}
-              placeholder="Tags (space sep)"
+              placeholder="Tags (wait: YYYY-MM-DD, recur: daily)"
               value={tags}
               onChange={(e) => setTags(e.target.value)}
               onKeyDown={handleKeyDown}

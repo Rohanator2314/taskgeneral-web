@@ -92,14 +92,15 @@ export function usePreferences() {
     const w = prefs.urgencyWeights;
     let score = 0;
 
-    if (task.tags.includes('next')) score += w.next;
+    if (task.tags.includes('NEXT')) score += w.next;
 
     if (task.due) {
       const dueDate = new Date(task.due);
       const now = new Date();
-      const days = (dueDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
-      if (days < 0) score += w.due;
-      else if (days < 7) score += w.due * (1 - days / 7);
+      const daysOverdue = (now.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24);
+      if (daysOverdue >= 7) score += w.due;
+      else if (daysOverdue >= -14) score += w.due * (((daysOverdue + 14) * 0.8 / 21) + 0.2);
+      else score += w.due * 0.2;
     }
 
     const p = task.priority || '';

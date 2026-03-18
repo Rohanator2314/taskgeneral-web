@@ -11,6 +11,24 @@ import type { TaskFilterParams } from '../api/types'
 
 type View = 'tasks' | 'settings' | 'urgency-weights'
 
+interface LastSyncInfo {
+  timestamp: number;
+  message: string;
+}
+
+const LAST_SYNC_KEY = 'taskgeneral_last_sync';
+
+function formatLastSync(info: LastSyncInfo | null): string {
+  if (!info) return 'Last sync: never';
+  const mins = Math.floor((Date.now() - info.timestamp) / 60000);
+  if (mins < 1) return `Last sync: just now - ${info.message}`;
+  if (mins < 60) return `Last sync: ${mins}min ago - ${info.message}`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `Last sync: ${hours}h ago - ${info.message}`;
+  const days = Math.floor(hours / 24);
+  return `Last sync: ${days}d ago - ${info.message}`;
+}
+
 export default function Layout() {
   const { theme, toggleTheme } = useTheme()
   const { signOut } = useAuth()
@@ -20,6 +38,10 @@ export default function Layout() {
   const { data: syncStatus } = useSyncConfigStatus()
   const syncMutation = useSync()
   const [isSyncing, setIsSyncing] = useState(false)
+  const [lastSync, setLastSync] = useState<LastSyncInfo | null>(() => {
+    const stored = localStorage.getItem(LAST_SYNC_KEY);
+    return stored ? JSON.parse(stored) : null;
+  })
 
   const [filter, setFilter] = useState<TaskFilterParams>(() => {
     const params = new URLSearchParams(window.location.search);
@@ -71,6 +93,11 @@ export default function Layout() {
     if (isSyncing || !syncStatus?.configured) return;
     setIsSyncing(true);
     syncMutation.mutate(undefined, {
+      onSuccess: (data) => {
+        const info: LastSyncInfo = { timestamp: Date.now(), message: data.message };
+        setLastSync(info);
+        localStorage.setItem(LAST_SYNC_KEY, JSON.stringify(info));
+      },
       onSettled: () => setIsSyncing(false),
     });
   };
@@ -161,7 +188,7 @@ export default function Layout() {
             </>
           )}
           <span className="text-border">|</span>
-          <span>Last sync: never</span>
+          <span>{formatLastSync(lastSync)}</span>
           <span className="flex-1 text-border overflow-hidden whitespace-nowrap">
             ────────────────────────────────────────────────────────────────────────
           </span>
