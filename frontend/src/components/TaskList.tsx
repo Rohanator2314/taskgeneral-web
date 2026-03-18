@@ -123,19 +123,18 @@ export default function TaskList({ filter, onSync, calculateUrgency }: TaskListP
     onWait: (uuid) => {
       const task = tasks?.find(t => t.uuid === uuid);
       if (!task) return;
-      const waitTag = task.tags?.find(t => t.startsWith('wait:'));
-      const currentTags = task.tags || [];
-      let newTags: string[];
-      if (waitTag) {
-        newTags = currentTags.filter(t => t !== waitTag);
+      if (task.wait) {
+        updateTask.mutate(
+          { uuid, updates: { wait: '' } },
+          { onSuccess: () => flash('Wait cleared') }
+        );
       } else {
-        const waitDate = new Date().toISOString().slice(0, 10);
-        newTags = [...currentTags, `wait:${waitDate}`];
+        const waitDate = new Date().toISOString();
+        updateTask.mutate(
+          { uuid, updates: { wait: waitDate } },
+          { onSuccess: () => flash('Waiting') }
+        );
       }
-      updateTask.mutate(
-        { uuid, updates: { tags: newTags } },
-        { onSuccess: () => flash(waitTag ? 'Wait cleared' : 'Waiting') }
-      );
     },
     onSync: onSync || (() => {}),
   });
