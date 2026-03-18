@@ -92,7 +92,7 @@ export function usePreferences() {
     const w = prefs.urgencyWeights;
     let score = 0;
 
-    if (task.tags.includes('NEXT')) score += w.next;
+    if (task.tags.includes('next')) score += w.next;
 
     if (task.due) {
       const dueDate = new Date(task.due);
