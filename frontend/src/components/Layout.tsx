@@ -65,6 +65,13 @@ export default function Layout() {
     return () => window.removeEventListener('keydown', handler);
   }, [view]);
 
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setLastSync(prev => prev ? { ...prev } : null);
+    }, 10000);
+    return () => clearInterval(interval);
+  }, []);
+
   const handleFilterChange = (newFilter: TaskFilterParams) => {
     const params = new URLSearchParams();
     if (newFilter.status) params.set('status', newFilter.status);
@@ -94,9 +101,14 @@ export default function Layout() {
     setIsSyncing(true);
     syncMutation.mutate(undefined, {
       onSuccess: (data) => {
+        console.log('[Sync] Success response:', data);
         const info: LastSyncInfo = { timestamp: Date.now(), message: data.message };
         setLastSync(info);
         localStorage.setItem(LAST_SYNC_KEY, JSON.stringify(info));
+        console.log('[Sync] Updated lastSync:', info);
+      },
+      onError: (error) => {
+        console.error('[Sync] Error:', error);
       },
       onSettled: () => setIsSyncing(false),
     });

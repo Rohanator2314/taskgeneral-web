@@ -258,13 +258,16 @@ pub async fn sync_now(
 ) -> Result<Json<serde_json::Value>, AppError> {
     let mut mgr = make_mgr(&state, user_id.0)?;
 
+    let start = std::time::Instant::now();
     let result = tokio::task::spawn_blocking(move || mgr.sync())
         .await
         .map_err(|e| AppError::Internal(e.to_string()))?
         .map_err(AppError::from)?;
+    let duration_secs = start.elapsed().as_secs_f64();
 
+    let message = format!("{} in {:.1}s", result.message, duration_secs);
     Ok(Json(
-        json!({ "success": result.success, "message": result.message }),
+        json!({ "success": result.success, "message": message }),
     ))
 }
 
